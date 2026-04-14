@@ -130,7 +130,16 @@ const updateCategory = async (id: string, payload: UpdateCategoryPayload) => {
 
 const deleteCategory = async (id: string) => {
   const existingCategory = await prisma.category.findUnique({
-    where: { id }
+    where: { id },
+    select: {
+      id: true,
+      imagePath: true,
+      subCategories: {
+        select: {
+          imagePath: true
+        }
+      }
+    }
   });
 
   if (!existingCategory) {
@@ -141,7 +150,14 @@ const deleteCategory = async (id: string) => {
     where: { id }
   });
 
-  await removeLocalFile(path.join(process.cwd(), existingCategory.imagePath));
+  const filePathsToDelete = [
+    existingCategory.imagePath,
+    ...existingCategory.subCategories.map((subCategory) => subCategory.imagePath)
+  ];
+
+  await Promise.all(
+    filePathsToDelete.map((filePath) => removeLocalFile(path.join(process.cwd(), filePath)))
+  );
 };
 
 export const categoryService = {
