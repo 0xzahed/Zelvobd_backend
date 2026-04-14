@@ -3,8 +3,9 @@ import { StatusCodes } from 'http-status-codes';
 import multer from 'multer';
 
 import { ApiError } from './ApiError';
+import { sendResponse } from '../../utils/sendResponse';
 
-export const globalErrorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
+export const globalErrorHandler: ErrorRequestHandler = (error, req, res, _next) => {
   const statusCode =
     error instanceof ApiError
       ? error.statusCode
@@ -12,16 +13,11 @@ export const globalErrorHandler: ErrorRequestHandler = (error, _req, res, _next)
         ? StatusCodes.BAD_REQUEST
         : StatusCodes.INTERNAL_SERVER_ERROR;
 
-  const message =
-    error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE'
-      ? 'Image size must be less than 5MB'
-      : error instanceof Error
-        ? error.message
-        : 'Something went wrong';
+  const message = error instanceof Error ? error.message : 'Something went wrong';
 
-  res.status(statusCode).json({
-    success: false,
+  sendResponse(req, res, {
+    statusCode,
     message,
-    stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    data: null
   });
 };

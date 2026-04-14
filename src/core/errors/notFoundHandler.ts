@@ -1,9 +1,12 @@
 import { RequestHandler } from 'express';
 import { StatusCodes } from 'http-status-codes';
 
+import { sendResponse } from '../../utils/sendResponse';
+
 export const notFoundHandler: RequestHandler = (req, res) => {
-  res.status(StatusCodes.NOT_FOUND).json({
-    success: false,
-    message: `Route not found: ${req.originalUrl}`
+  sendResponse(req, res, {
+    statusCode: StatusCodes.NOT_FOUND,
+    message: `Route not found: ${req.originalUrl}`,
+    data: null
   });
 };

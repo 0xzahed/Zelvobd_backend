@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { ApiError } from '../../core/errors/ApiError';
 import { removeLocalFile } from '../../utils/file';
+import { sendResponse } from '../../utils/sendResponse';
 import { categoryService } from './category.service';
 import {
   createCategorySchema,
@@ -45,8 +46,8 @@ const createCategory = async (req: Request, res: Response, next: NextFunction) =
       imagePath: `upload/${uploadedFile.filename}`
     });
 
-    res.status(StatusCodes.CREATED).json({
-      success: true,
+    sendResponse(req, res, {
+      statusCode: StatusCodes.CREATED,
       message: 'Category created successfully',
       data: category
     });
@@ -69,11 +70,13 @@ const getCategoryList = async (req: Request, res: Response, next: NextFunction) 
 
     const result = await categoryService.getCategoryList(parsedQuery.data);
 
-    res.status(StatusCodes.OK).json({
-      success: true,
+    sendResponse(req, res, {
+      statusCode: StatusCodes.OK,
       message: 'Categories fetched successfully',
-      meta: result.meta,
-      data: result.data
+      data: {
+        meta: result.meta,
+        categories: result.data
+      }
     });
   } catch (error) {
     next(error);
@@ -84,8 +87,8 @@ const getSingleCategory = async (req: Request, res: Response, next: NextFunction
   try {
     const category = await categoryService.getSingleCategory(getCategoryIdFromParams(req));
 
-    res.status(StatusCodes.OK).json({
-      success: true,
+    sendResponse(req, res, {
+      statusCode: StatusCodes.OK,
       message: 'Category fetched successfully',
       data: category
     });
@@ -126,8 +129,8 @@ const updateCategory = async (req: Request, res: Response, next: NextFunction) =
 
     const category = await categoryService.updateCategory(getCategoryIdFromParams(req), payload);
 
-    res.status(StatusCodes.OK).json({
-      success: true,
+    sendResponse(req, res, {
+      statusCode: StatusCodes.OK,
       message: 'Category updated successfully',
       data: category
     });
@@ -144,9 +147,10 @@ const deleteCategory = async (req: Request, res: Response, next: NextFunction) =
   try {
     await categoryService.deleteCategory(getCategoryIdFromParams(req));
 
-    res.status(StatusCodes.OK).json({
-      success: true,
-      message: 'Category deleted successfully'
+    sendResponse(req, res, {
+      statusCode: StatusCodes.OK,
+      message: 'Category deleted successfully',
+      data: null
     });
   } catch (error) {
     next(error);

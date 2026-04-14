@@ -55,6 +55,7 @@ prisma/
 - `npm run prisma:migrate:deploy` -> apply migrations in production
 - `npm run prisma:db:push` -> sync schema without migration (quick prototyping)
 - `npm run prisma:studio` -> open Prisma Studio
+- `npm run admin:seed` -> create/update the single admin account from env values
 
 ## Getting Started
 
@@ -93,6 +94,47 @@ npm run prisma:generate
 ```bash
 npm run prisma:migrate:dev -- --name init
 ```
+
+## Admin Authentication Setup
+
+1. Configure these values in `.env`:
+
+- `JWT_ACCESS_SECRET`
+- `JWT_ACCESS_EXPIRES_IN`
+- `ADMIN_SEED_EMAIL`
+- `ADMIN_SEED_PASSWORD`
+- `BCRYPT_SALT_ROUNDS`
+
+2. Seed admin account (create if missing, update password if exists):
+
+```bash
+npm run admin:seed
+```
+
+3. Login endpoint:
+
+- `POST /api/v1/auth/admin/login`
+
+Payload:
+
+```json
+{
+  "email": "admin@example.com",
+  "password": "ChangeThisPassword123!"
+}
+```
+
+The response includes `accessToken`. Use it as:
+
+- `Authorization: Bearer <accessToken>`
+
+4. Category routes are admin-protected:
+
+- `POST /api/v1/categories`
+- `GET /api/v1/categories`
+- `GET /api/v1/categories/:id`
+- `PATCH /api/v1/categories/:id`
+- `DELETE /api/v1/categories/:id`
 
 ## Health Endpoint
 
