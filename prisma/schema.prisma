@@ -19,12 +19,28 @@ model Admin {
 }
 
 model Category {
-  id        String   @id @default(cuid())
-  title     String   @unique
-  imageUrl  String
-  imagePath String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String        @id @default(cuid())
+  title         String        @unique
+  imageUrl      String
+  imagePath     String
+  subCategories SubCategory[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   @@map("categories")
+}
+
+model SubCategory {
+  id         String   @id @default(cuid())
+  categoryId String
+  title      String
+  imageUrl   String
+  imagePath  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, title])
+  @@map("sub_categories")
 }
