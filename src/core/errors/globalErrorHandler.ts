@@ -13,7 +13,12 @@ export const globalErrorHandler: ErrorRequestHandler = (error, req, res, _next) 
         ? StatusCodes.BAD_REQUEST
         : StatusCodes.INTERNAL_SERVER_ERROR;
 
-  const message = error instanceof Error ? error.message : 'Something went wrong';
+  const message =
+    error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE'
+      ? 'Image size must be less than 2MB'
+      : error instanceof Error
+        ? error.message
+        : 'Something went wrong';
 
   sendResponse(req, res, {
     statusCode,

@@ -6,6 +6,8 @@ import multer from 'multer';
 
 import { ApiError } from '../core/errors/ApiError';
 
+const MAX_IMAGE_SIZE_IN_MB = 2;
+
 const uploadDirectoryPath = path.join(process.cwd(), 'upload');
 
 if (!fs.existsSync(uploadDirectoryPath)) {
@@ -46,6 +48,6 @@ export const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024
+    fileSize: MAX_IMAGE_SIZE_IN_MB * 1024 * 1024
   }
 });
