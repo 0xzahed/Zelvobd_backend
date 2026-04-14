@@ -42,8 +42,8 @@ const createCategory = async (req: Request, res: Response, next: NextFunction) =
 
     const category = await categoryService.createCategory({
       title: parsedBody.data.title,
-      imageUrl: `/upload/${uploadedFile.filename}`,
-      imagePath: `upload/${uploadedFile.filename}`
+      imageUrl: `/upload/categories/${uploadedFile.filename}`,
+      imagePath: `upload/categories/${uploadedFile.filename}`
     });
 
     sendResponse(req, res, {
@@ -123,8 +123,8 @@ const updateCategory = async (req: Request, res: Response, next: NextFunction) =
     };
 
     if (uploadedFile) {
-      payload.imageUrl = `/upload/${uploadedFile.filename}`;
-      payload.imagePath = `upload/${uploadedFile.filename}`;
+      payload.imageUrl = `/upload/categories/${uploadedFile.filename}`;
+      payload.imagePath = `upload/categories/${uploadedFile.filename}`;
     }
 
     const category = await categoryService.updateCategory(getCategoryIdFromParams(req), payload);

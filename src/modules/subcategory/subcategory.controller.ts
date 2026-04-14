@@ -43,8 +43,8 @@ const createSubCategory = async (req: Request, res: Response, next: NextFunction
     const subCategory = await subCategoryService.createSubCategory({
       categoryId: parsedBody.data.categoryId,
       title: parsedBody.data.title,
-      imageUrl: `/upload/${uploadedFile.filename}`,
-      imagePath: `upload/${uploadedFile.filename}`
+      imageUrl: `/upload/subCategories/${uploadedFile.filename}`,
+      imagePath: `upload/subCategories/${uploadedFile.filename}`
     });
 
     sendResponse(req, res, {
@@ -125,8 +125,8 @@ const updateSubCategory = async (req: Request, res: Response, next: NextFunction
     };
 
     if (uploadedFile) {
-      payload.imageUrl = `/upload/${uploadedFile.filename}`;
-      payload.imagePath = `upload/${uploadedFile.filename}`;
+      payload.imageUrl = `/upload/subCategories/${uploadedFile.filename}`;
+      payload.imagePath = `upload/subCategories/${uploadedFile.filename}`;
     }
 
     const subCategory = await subCategoryService.updateSubCategory(
