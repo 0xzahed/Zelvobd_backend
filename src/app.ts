@@ -2,6 +2,7 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import path from 'node:path';
 
 import { env } from './config/env';
 import { globalErrorHandler } from './core/errors/globalErrorHandler';
@@ -15,6 +16,7 @@ app.use(cors({ origin: env.corsOrigin }));
 app.use(morgan(env.nodeEnv === 'production' ? 'combined' : 'dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/upload', express.static(path.join(process.cwd(), 'upload')));
 
 app.use('/api/v1', router);
 
