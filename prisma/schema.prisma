@@ -7,6 +7,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ProductStatus {
+  PENDING
+  PROCESSING
+  HOLD
+  PICKUP
+  DELIVERED
+  PARTIAL
+  REJECT
+  CANCEL
+  NOT_COMPLETED
+  TRASH
+}
+
 model Admin {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -24,6 +37,7 @@ model Category {
   imageUrl      String
   imagePath     String
   subCategories SubCategory[]
+  products      Product[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -36,6 +50,7 @@ model SubCategory {
   title      String
   imageUrl   String
   imagePath  String
+  products   Product[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -43,4 +58,51 @@ model SubCategory {
 
   @@unique([categoryId, title])
   @@map("sub_categories")
+}
+
+model Product {
+  id                    String          @id @default(cuid())
+  categoryId            String
+  subCategoryId         String
+  title                 String
+  slug                  String          @unique
+  descriptionDelta      Json
+  descriptionHtml       String
+  extraDescriptionDelta Json?
+  extraDescriptionHtml  String?
+  weight                String
+  material              String
+  stock                 Boolean         @default(true)
+  availability          Boolean         @default(true)
+  status                ProductStatus   @default(PENDING)
+  videoUrl              String?
+  videoPath             String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  category    Category         @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  subCategory SubCategory      @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+  variants    ProductVariant[]
+
+  @@index([categoryId])
+  @@index([subCategoryId])
+  @@map("products")
+}
+
+model ProductVariant {
+  id              String   @id @default(cuid())
+  productId       String
+  actualPrice     Decimal  @db.Decimal(10, 2)
+  discountedPrice Decimal  @db.Decimal(10, 2)
+  color           String
+  size            String
+  imageUrl        String
+  imagePath       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_variants")
 }

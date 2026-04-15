@@ -6,6 +6,7 @@ import { categoryRouter } from '../modules/category/category.route';
 import { healthRouter } from '../modules/health/health.route';
 import { subCategoryRouter } from '../modules/subcategory/subcategory.route';
 import { adminRouter } from '../modules/admin/admin.route';
+import { productRouter } from '../modules/product/product.route';
 
 export const router = Router();
 
@@ -14,3 +15,4 @@ router.use('/auth', authRouter);
 router.use('/categories', categoryRouter);
 router.use('/subcategories', subCategoryRouter);
 router.use('/admins', adminRouter);
+router.use('/products', productRouter);

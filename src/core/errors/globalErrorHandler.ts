@@ -15,7 +15,9 @@ export const globalErrorHandler: ErrorRequestHandler = (error, req, res, _next) 
 
   const message =
     error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE'
-      ? 'Image size must be less than 2MB'
+      ? error.field === 'video'
+        ? 'Video size must be less than 100MB'
+        : 'Image size must be less than 2MB'
       : error instanceof Error
         ? error.message
         : 'Something went wrong';
