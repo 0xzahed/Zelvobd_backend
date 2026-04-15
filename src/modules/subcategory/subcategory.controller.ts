@@ -1,9 +1,10 @@
-import { NextFunction, Request, Response } from 'express';
+import { Request } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
 
 import { ApiError } from '../../core/errors/ApiError';
 import { removeLocalFile } from '../../utils/file';
+import { catchAsync } from '../../utils/catchAsync';
 import { sendResponse } from '../../utils/sendResponse';
 import { subCategoryService } from './subcategory.service';
 import {
@@ -26,10 +27,9 @@ const getSubCategoryIdFromParams = (req: Request): string => {
   return subCategoryId;
 };
 
-const createSubCategory = async (req: Request, res: Response, next: NextFunction) => {
-  const uploadedFile = req.file;
-
-  try {
+const createSubCategory = catchAsync(
+  async (req, res) => {
+    const uploadedFile = req.file;
     const parsedBody = createSubCategorySchema.safeParse(req.body);
 
     if (!parsedBody.success) {
@@ -52,56 +52,50 @@ const createSubCategory = async (req: Request, res: Response, next: NextFunction
       message: 'Subcategory created successfully',
       data: subCategory
     });
-  } catch (error) {
-    if (uploadedFile) {
-      await removeLocalFile(uploadedFile.path);
-    }
+  },
+  {
+    onError: async (req) => {
+      const uploadedFile = req.file;
 
-    next(error);
-  }
-};
-
-const getSubCategoryList = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const parsedQuery = getSubCategoryListQuerySchema.safeParse(req.query);
-
-    if (!parsedQuery.success) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, getValidationErrorMessage(parsedQuery.error));
-    }
-
-    const result = await subCategoryService.getSubCategoryList(parsedQuery.data);
-
-    sendResponse(req, res, {
-      statusCode: StatusCodes.OK,
-      message: 'Subcategories fetched successfully',
-      data: {
-        meta: result.meta,
-        subCategories: result.data
+      if (uploadedFile) {
+        await removeLocalFile(uploadedFile.path);
       }
-    });
-  } catch (error) {
-    next(error);
+    }
   }
-};
+);
 
-const getSingleSubCategory = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const subCategory = await subCategoryService.getSingleSubCategory(getSubCategoryIdFromParams(req));
+const getSubCategoryList = catchAsync(async (req, res) => {
+  const parsedQuery = getSubCategoryListQuerySchema.safeParse(req.query);
 
-    sendResponse(req, res, {
-      statusCode: StatusCodes.OK,
-      message: 'Subcategory fetched successfully',
-      data: subCategory
-    });
-  } catch (error) {
-    next(error);
+  if (!parsedQuery.success) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, getValidationErrorMessage(parsedQuery.error));
   }
-};
 
-const updateSubCategory = async (req: Request, res: Response, next: NextFunction) => {
-  const uploadedFile = req.file;
+  const result = await subCategoryService.getSubCategoryList(parsedQuery.data);
 
-  try {
+  sendResponse(req, res, {
+    statusCode: StatusCodes.OK,
+    message: 'Subcategories fetched successfully',
+    data: {
+      meta: result.meta,
+      subCategories: result.data
+    }
+  });
+});
+
+const getSingleSubCategory = catchAsync(async (req, res) => {
+  const subCategory = await subCategoryService.getSingleSubCategory(getSubCategoryIdFromParams(req));
+
+  sendResponse(req, res, {
+    statusCode: StatusCodes.OK,
+    message: 'Subcategory fetched successfully',
+    data: subCategory
+  });
+});
+
+const updateSubCategory = catchAsync(
+  async (req, res) => {
+    const uploadedFile = req.file;
     const parsedBody = updateSubCategorySchema.safeParse(req.body);
 
     if (!parsedBody.success) {
@@ -139,28 +133,27 @@ const updateSubCategory = async (req: Request, res: Response, next: NextFunction
       message: 'Subcategory updated successfully',
       data: subCategory
     });
-  } catch (error) {
-    if (uploadedFile) {
-      await removeLocalFile(uploadedFile.path);
+  },
+  {
+    onError: async (req) => {
+      const uploadedFile = req.file;
+
+      if (uploadedFile) {
+        await removeLocalFile(uploadedFile.path);
+      }
     }
-
-    next(error);
   }
-};
+);
 
-const deleteSubCategory = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await subCategoryService.deleteSubCategory(getSubCategoryIdFromParams(req));
+const deleteSubCategory = catchAsync(async (req, res) => {
+  await subCategoryService.deleteSubCategory(getSubCategoryIdFromParams(req));
 
-    sendResponse(req, res, {
-      statusCode: StatusCodes.OK,
-      message: 'Subcategory deleted successfully',
-      data: null
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  sendResponse(req, res, {
+    statusCode: StatusCodes.OK,
+    message: 'Subcategory deleted successfully',
+    data: null
+  });
+});
 
 export const subCategoryController = {
   createSubCategory,

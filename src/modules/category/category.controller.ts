@@ -1,9 +1,10 @@
-import { NextFunction, Request, Response } from 'express';
+import { Request } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
 
 import { ApiError } from '../../core/errors/ApiError';
 import { removeLocalFile } from '../../utils/file';
+import { catchAsync } from '../../utils/catchAsync';
 import { sendResponse } from '../../utils/sendResponse';
 import { categoryService } from './category.service';
 import {
@@ -26,10 +27,9 @@ const getCategoryIdFromParams = (req: Request): string => {
   return categoryId;
 };
 
-const createCategory = async (req: Request, res: Response, next: NextFunction) => {
-  const uploadedFile = req.file;
-
-  try {
+const createCategory = catchAsync(
+  async (req, res) => {
+    const uploadedFile = req.file;
     const parsedBody = createCategorySchema.safeParse(req.body);
 
     if (!parsedBody.success) {
@@ -51,56 +51,50 @@ const createCategory = async (req: Request, res: Response, next: NextFunction) =
       message: 'Category created successfully',
       data: category
     });
-  } catch (error) {
-    if (uploadedFile) {
-      await removeLocalFile(uploadedFile.path);
-    }
+  },
+  {
+    onError: async (req) => {
+      const uploadedFile = req.file;
 
-    next(error);
-  }
-};
-
-const getCategoryList = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const parsedQuery = getCategoryListQuerySchema.safeParse(req.query);
-
-    if (!parsedQuery.success) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, getValidationErrorMessage(parsedQuery.error));
-    }
-
-    const result = await categoryService.getCategoryList(parsedQuery.data);
-
-    sendResponse(req, res, {
-      statusCode: StatusCodes.OK,
-      message: 'Categories fetched successfully',
-      data: {
-        meta: result.meta,
-        categories: result.data
+      if (uploadedFile) {
+        await removeLocalFile(uploadedFile.path);
       }
-    });
-  } catch (error) {
-    next(error);
+    }
   }
-};
+);
 
-const getSingleCategory = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const category = await categoryService.getSingleCategory(getCategoryIdFromParams(req));
+const getCategoryList = catchAsync(async (req, res) => {
+  const parsedQuery = getCategoryListQuerySchema.safeParse(req.query);
 
-    sendResponse(req, res, {
-      statusCode: StatusCodes.OK,
-      message: 'Category fetched successfully',
-      data: category
-    });
-  } catch (error) {
-    next(error);
+  if (!parsedQuery.success) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, getValidationErrorMessage(parsedQuery.error));
   }
-};
 
-const updateCategory = async (req: Request, res: Response, next: NextFunction) => {
-  const uploadedFile = req.file;
+  const result = await categoryService.getCategoryList(parsedQuery.data);
 
-  try {
+  sendResponse(req, res, {
+    statusCode: StatusCodes.OK,
+    message: 'Categories fetched successfully',
+    data: {
+      meta: result.meta,
+      categories: result.data
+    }
+  });
+});
+
+const getSingleCategory = catchAsync(async (req, res) => {
+  const category = await categoryService.getSingleCategory(getCategoryIdFromParams(req));
+
+  sendResponse(req, res, {
+    statusCode: StatusCodes.OK,
+    message: 'Category fetched successfully',
+    data: category
+  });
+});
+
+const updateCategory = catchAsync(
+  async (req, res) => {
+    const uploadedFile = req.file;
     const parsedBody = updateCategorySchema.safeParse(req.body);
 
     if (!parsedBody.success) {
@@ -134,28 +128,27 @@ const updateCategory = async (req: Request, res: Response, next: NextFunction) =
       message: 'Category updated successfully',
       data: category
     });
-  } catch (error) {
-    if (uploadedFile) {
-      await removeLocalFile(uploadedFile.path);
+  },
+  {
+    onError: async (req) => {
+      const uploadedFile = req.file;
+
+      if (uploadedFile) {
+        await removeLocalFile(uploadedFile.path);
+      }
     }
-
-    next(error);
   }
-};
+);
 
-const deleteCategory = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await categoryService.deleteCategory(getCategoryIdFromParams(req));
+const deleteCategory = catchAsync(async (req, res) => {
+  await categoryService.deleteCategory(getCategoryIdFromParams(req));
 
-    sendResponse(req, res, {
-      statusCode: StatusCodes.OK,
-      message: 'Category deleted successfully',
-      data: null
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  sendResponse(req, res, {
+    statusCode: StatusCodes.OK,
+    message: 'Category deleted successfully',
+    data: null
+  });
+});
 
 export const categoryController = {
   createCategory,
