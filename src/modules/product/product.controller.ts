@@ -12,7 +12,11 @@ import { catchAsync } from '../../utils/catchAsync';
 import { removeLocalFile } from '../../utils/file';
 import { sendResponse } from '../../utils/sendResponse';
 import { productService } from './product.service';
-import { createProductSchema } from './product.validation';
+import {
+  createProductSchema,
+  getProductListQuerySchema,
+  updateProductSchema
+} from './product.validation';
 
 type ProductMediaFiles = {
   variantImages?: Express.Multer.File[];
@@ -66,6 +70,86 @@ const getProductValidationErrorMessage = (error: z.ZodError): string => {
   return firstIssue.message ?? 'Invalid product payload';
 };
 
+const getProductIdFromParams = (req: Request): string => {
+  const productId = req.params.id;
+
+  if (typeof productId !== 'string' || productId.length === 0) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Product id is required');
+  }
+
+  return productId;
+};
+
+const validateAndBuildProductPayload = (req: Request, schema: typeof createProductSchema) => {
+  const parsedBody = schema.safeParse(req.body);
+
+  if (!parsedBody.success) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, getProductValidationErrorMessage(parsedBody.error));
+  }
+
+  const { variantImages, videoFile } = getProductMediaFiles(req);
+
+  if (variantImages.length === 0) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'At least one variant image is required');
+  }
+
+  if (variantImages.length !== parsedBody.data.variants.length) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'Number of variant images must match the number of variants'
+    );
+  }
+
+  if (variantImages.some((variantImage) => variantImage.size > PRODUCT_IMAGE_MAX_SIZE_BYTES)) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Each variant image size must be less than 2MB');
+  }
+
+  if (videoFile && videoFile.size > PRODUCT_VIDEO_MAX_SIZE_BYTES) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Video size must be less than 100MB');
+  }
+
+  const descriptionHtml = sanitizeRichTextHtml(parsedBody.data.descriptionHtml);
+  const extraDescriptionHtml = parsedBody.data.extraDescriptionHtml
+    ? sanitizeRichTextHtml(parsedBody.data.extraDescriptionHtml)
+    : undefined;
+
+  if (descriptionHtml.trim().length === 0) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Description HTML is invalid after sanitization');
+  }
+
+  if (typeof extraDescriptionHtml === 'string' && extraDescriptionHtml.trim().length === 0) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'Extra description HTML is invalid after sanitization'
+    );
+  }
+
+  const variantsWithMedia = parsedBody.data.variants.map((variant, index) => {
+    const imageFile = variantImages[index];
+
+    if (!imageFile) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Each variant must have exactly one image');
+    }
+
+    return {
+      ...variant,
+      imageUrl: `/upload/products/images/${imageFile.filename}`,
+      imagePath: `upload/products/images/${imageFile.filename}`
+    };
+  });
+
+  return {
+    payload: {
+      ...parsedBody.data,
+      descriptionHtml,
+      extraDescriptionHtml,
+      variants: variantsWithMedia,
+      videoUrl: videoFile ? `/upload/products/videos/${videoFile.filename}` : undefined,
+      videoPath: videoFile ? `upload/products/videos/${videoFile.filename}` : undefined
+    }
+  };
+};
+
 const sanitizeRichTextHtml = (value: string): string => {
   return sanitizeHtml(value, {
     allowedTags: [...sanitizeHtml.defaults.allowedTags, 'img', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
@@ -101,71 +185,9 @@ const removeUploadedProductMediaFiles = async (req: Request): Promise<void> => {
 
 const createProduct = catchAsync(
   async (req, res) => {
-    const parsedBody = createProductSchema.safeParse(req.body);
+    const { payload } = validateAndBuildProductPayload(req, createProductSchema);
 
-    if (!parsedBody.success) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, getProductValidationErrorMessage(parsedBody.error));
-    }
-
-    const { variantImages, videoFile } = getProductMediaFiles(req);
-
-    if (variantImages.length === 0) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, 'At least one variant image is required');
-    }
-
-    if (variantImages.length !== parsedBody.data.variants.length) {
-      throw new ApiError(
-        StatusCodes.BAD_REQUEST,
-        'Number of variant images must match the number of variants'
-      );
-    }
-
-    if (variantImages.some((variantImage) => variantImage.size > PRODUCT_IMAGE_MAX_SIZE_BYTES)) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, 'Each variant image size must be less than 2MB');
-    }
-
-    if (videoFile && videoFile.size > PRODUCT_VIDEO_MAX_SIZE_BYTES) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, 'Video size must be less than 100MB');
-    }
-
-    const descriptionHtml = sanitizeRichTextHtml(parsedBody.data.descriptionHtml);
-    const extraDescriptionHtml = parsedBody.data.extraDescriptionHtml
-      ? sanitizeRichTextHtml(parsedBody.data.extraDescriptionHtml)
-      : undefined;
-
-    if (descriptionHtml.trim().length === 0) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, 'Description HTML is invalid after sanitization');
-    }
-
-    if (typeof extraDescriptionHtml === 'string' && extraDescriptionHtml.trim().length === 0) {
-      throw new ApiError(
-        StatusCodes.BAD_REQUEST,
-        'Extra description HTML is invalid after sanitization'
-      );
-    }
-
-    const variantsWithMedia = parsedBody.data.variants.map((variant, index) => {
-      const imageFile = variantImages[index];
-
-      if (!imageFile) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, 'Each variant must have exactly one image');
-      }
-
-      return {
-        ...variant,
-        imageUrl: `/upload/products/images/${imageFile.filename}`,
-        imagePath: `upload/products/images/${imageFile.filename}`
-      };
-    });
-
-    const product = await productService.createProduct({
-      ...parsedBody.data,
-      descriptionHtml,
-      extraDescriptionHtml,
-      variants: variantsWithMedia,
-      videoUrl: videoFile ? `/upload/products/videos/${videoFile.filename}` : undefined,
-      videoPath: videoFile ? `upload/products/videos/${videoFile.filename}` : undefined
-    });
+    const product = await productService.createProduct(payload);
 
     sendResponse(req, res, {
       statusCode: StatusCodes.CREATED,
@@ -178,6 +200,79 @@ const createProduct = catchAsync(
   }
 );
 
+const getProductList = catchAsync(async (req, res) => {
+  const parsedQuery = getProductListQuerySchema.safeParse(req.query);
+
+  if (!parsedQuery.success) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      parsedQuery.error.issues[0]?.message ?? 'Invalid product list query'
+    );
+  }
+
+  const result = await productService.getProductList(parsedQuery.data);
+
+  sendResponse(req, res, {
+    statusCode: StatusCodes.OK,
+    message: 'Products fetched successfully',
+    data: {
+      meta: result.meta,
+      products: result.data
+    }
+  });
+});
+
+const getSingleProduct = catchAsync(async (req, res) => {
+  const product = await productService.getSingleProduct(getProductIdFromParams(req));
+
+  sendResponse(req, res, {
+    statusCode: StatusCodes.OK,
+    message: 'Product fetched successfully',
+    data: product
+  });
+});
+
+const updateProduct = catchAsync(
+  async (req, res) => {
+    const { payload } = validateAndBuildProductPayload(req, updateProductSchema);
+    const product = await productService.updateProduct(getProductIdFromParams(req), payload);
+
+    sendResponse(req, res, {
+      statusCode: StatusCodes.OK,
+      message: 'Product updated successfully',
+      data: product
+    });
+  },
+  {
+    onError: removeUploadedProductMediaFiles
+  }
+);
+
+const deleteProduct = catchAsync(async (req, res) => {
+  await productService.deleteProduct(getProductIdFromParams(req));
+
+  sendResponse(req, res, {
+    statusCode: StatusCodes.OK,
+    message: 'Product deleted successfully',
+    data: null
+  });
+});
+
+const copyProduct = catchAsync(async (req, res) => {
+  const copiedProduct = await productService.copyProduct(getProductIdFromParams(req));
+
+  sendResponse(req, res, {
+    statusCode: StatusCodes.CREATED,
+    message: 'Product copied successfully',
+    data: copiedProduct
+  });
+});
+
 export const productController = {
-  createProduct
+  createProduct,
+  getProductList,
+  getSingleProduct,
+  updateProduct,
+  deleteProduct,
+  copyProduct
 };

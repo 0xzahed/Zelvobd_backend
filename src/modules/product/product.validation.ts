@@ -131,4 +131,15 @@ export const createProductSchema = z
     }
   });
 
+export const updateProductSchema = createProductSchema;
+
+export const getProductListQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(10),
+  search: z.string().trim().optional(),
+  categoryId: z.string().trim().min(1, 'categoryId is invalid').optional(),
+  subCategoryId: z.string().trim().min(1, 'subCategoryId is invalid').optional()
+});
+
 export type CreateProductInput = z.infer<typeof createProductSchema>;
+export type GetProductListQueryInput = z.infer<typeof getProductListQuerySchema>;
