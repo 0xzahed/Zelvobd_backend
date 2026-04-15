@@ -66,9 +66,10 @@ const productSelect = {
 
 const generateSlug = (title: string): string => {
   const baseSlug = title
-    .toLowerCase()
+    .toLocaleLowerCase()
+    .normalize('NFKC')
     .trim()
-    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/[^\p{L}\p{N}\p{M}]+/gu, '-')
     .replace(/^-+|-+$/g, '')
     .replace(/-{2,}/g, '-');
 
