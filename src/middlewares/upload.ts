@@ -123,3 +123,4 @@ export const productMediaUpload = multer({
 
 export const categoryImageUpload = createImageUploadMiddleware('categories');
 export const subCategoryImageUpload = createImageUploadMiddleware('subCategories');
+export const bannerImageUpload = createImageUploadMiddleware('banners');
