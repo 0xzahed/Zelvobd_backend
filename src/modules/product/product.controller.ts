@@ -15,7 +15,8 @@ import { productService } from './product.service';
 import {
   createProductSchema,
   getProductListQuerySchema,
-  updateProductSchema
+  updateProductSchema,
+  UpdateProductInput
 } from './product.validation';
 
 type ProductMediaFiles = {
@@ -80,8 +81,8 @@ const getProductIdFromParams = (req: Request): string => {
   return productId;
 };
 
-const validateAndBuildProductPayload = (req: Request, schema: typeof createProductSchema) => {
-  const parsedBody = schema.safeParse(req.body);
+const validateAndBuildCreateProductPayload = (req: Request) => {
+  const parsedBody = createProductSchema.safeParse(req.body);
 
   if (!parsedBody.success) {
     throw new ApiError(StatusCodes.BAD_REQUEST, getProductValidationErrorMessage(parsedBody.error));
@@ -150,6 +151,109 @@ const validateAndBuildProductPayload = (req: Request, schema: typeof createProdu
   };
 };
 
+const validateAndBuildUpdateProductPayload = (req: Request) => {
+  const parsedBody = updateProductSchema.safeParse(req.body);
+
+  if (!parsedBody.success) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, getProductValidationErrorMessage(parsedBody.error));
+  }
+
+  const { variantImages, videoFile } = getProductMediaFiles(req);
+  const hasBodyFields = Object.keys(parsedBody.data).length > 0;
+  const variantsFromBody = parsedBody.data.variants;
+
+  if (!hasBodyFields && variantImages.length === 0 && !videoFile) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'At least one field or file is required for update');
+  }
+
+  const hasVariantsInBody = Array.isArray(variantsFromBody);
+
+  if (variantImages.length > 0 && !hasVariantsInBody) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'Variants payload is required when variant images are provided'
+    );
+  }
+
+  if (hasVariantsInBody && variantImages.length !== variantsFromBody.length) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'Number of variant images must match the number of variants'
+    );
+  }
+
+  if (variantImages.some((variantImage) => variantImage.size > PRODUCT_IMAGE_MAX_SIZE_BYTES)) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Each variant image size must be less than 2MB');
+  }
+
+  if (videoFile && videoFile.size > PRODUCT_VIDEO_MAX_SIZE_BYTES) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Video size must be less than 100MB');
+  }
+
+  const { variants: _ignoredVariants, ...restData } = parsedBody.data;
+
+  const payload: Omit<UpdateProductInput, 'variants'> & {
+    variants?: Array<{
+      actualPrice: number;
+      discountedPrice: number;
+      color: string;
+      size: string;
+      imageUrl: string;
+      imagePath: string;
+    }>;
+    videoUrl?: string;
+    videoPath?: string;
+  } = {
+    ...restData
+  };
+
+  if (typeof parsedBody.data.descriptionHtml === 'string') {
+    const descriptionHtml = sanitizeRichTextHtml(parsedBody.data.descriptionHtml);
+
+    if (descriptionHtml.trim().length === 0) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Description HTML is invalid after sanitization');
+    }
+
+    payload.descriptionHtml = descriptionHtml;
+  }
+
+  if (typeof parsedBody.data.extraDescriptionHtml === 'string') {
+    const extraDescriptionHtml = sanitizeRichTextHtml(parsedBody.data.extraDescriptionHtml);
+
+    if (extraDescriptionHtml.trim().length === 0) {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        'Extra description HTML is invalid after sanitization'
+      );
+    }
+
+    payload.extraDescriptionHtml = extraDescriptionHtml;
+  }
+
+  if (hasVariantsInBody) {
+    payload.variants = variantsFromBody.map((variant, index) => {
+      const imageFile = variantImages[index];
+
+      if (!imageFile) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Each variant must have exactly one image');
+      }
+
+      return {
+        ...variant,
+        imageUrl: `/upload/products/images/${imageFile.filename}`,
+        imagePath: `upload/products/images/${imageFile.filename}`
+      };
+    });
+  }
+
+  if (videoFile) {
+    payload.videoUrl = `/upload/products/videos/${videoFile.filename}`;
+    payload.videoPath = `upload/products/videos/${videoFile.filename}`;
+  }
+
+  return { payload };
+};
+
 const sanitizeRichTextHtml = (value: string): string => {
   return sanitizeHtml(value, {
     allowedTags: [...sanitizeHtml.defaults.allowedTags, 'img', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
@@ -185,7 +289,7 @@ const removeUploadedProductMediaFiles = async (req: Request): Promise<void> => {
 
 const createProduct = catchAsync(
   async (req, res) => {
-    const { payload } = validateAndBuildProductPayload(req, createProductSchema);
+    const { payload } = validateAndBuildCreateProductPayload(req);
 
     const product = await productService.createProduct(payload);
 
@@ -234,7 +338,7 @@ const getSingleProduct = catchAsync(async (req, res) => {
 
 const updateProduct = catchAsync(
   async (req, res) => {
-    const { payload } = validateAndBuildProductPayload(req, updateProductSchema);
+    const { payload } = validateAndBuildUpdateProductPayload(req);
     const product = await productService.updateProduct(getProductIdFromParams(req), payload);
 
     sendResponse(req, res, {

@@ -1,5 +1,6 @@
 import path from 'node:path';
-import { promises as fs } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { promises as fs, createReadStream } from 'node:fs';
 
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { Prisma } from '@prisma/client';
@@ -8,7 +9,7 @@ import { StatusCodes } from 'http-status-codes';
 import { ApiError } from '../../core/errors/ApiError';
 import { prisma } from '../../lib/prisma';
 import { removeLocalFile } from '../../utils/file';
-import { CreateProductInput } from './product.validation';
+import { CreateProductInput, UpdateProductInput } from './product.validation';
 
 type CreateProductVariantWithMedia = CreateProductInput['variants'][number] & {
   imageUrl: string;
@@ -17,6 +18,12 @@ type CreateProductVariantWithMedia = CreateProductInput['variants'][number] & {
 
 type CreateProductPayload = Omit<CreateProductInput, 'variants'> & {
   variants: CreateProductVariantWithMedia[];
+  videoUrl?: string;
+  videoPath?: string;
+};
+
+type UpdateProductPayload = Omit<UpdateProductInput, 'variants'> & {
+  variants?: CreateProductVariantWithMedia[];
   videoUrl?: string;
   videoPath?: string;
 };
@@ -115,6 +122,50 @@ const duplicateLocalMediaFile = async (
     copiedRelativePath,
     copiedPublicUrl: relativePathToPublicUrl(copiedRelativePath)
   };
+};
+
+const generateFileHash = async (absoluteFilePath: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const hash = createHash('sha256');
+    const stream = createReadStream(absoluteFilePath);
+
+    stream.on('data', (chunk) => {
+      hash.update(chunk);
+    });
+
+    stream.on('error', reject);
+    stream.on('end', () => {
+      resolve(hash.digest('hex'));
+    });
+  });
+};
+
+const areRelativeFilesIdentical = async (
+  firstRelativePath: string,
+  secondRelativePath: string
+): Promise<boolean> => {
+  const firstAbsolutePath = path.join(process.cwd(), firstRelativePath);
+  const secondAbsolutePath = path.join(process.cwd(), secondRelativePath);
+
+  try {
+    const [firstStat, secondStat] = await Promise.all([
+      fs.stat(firstAbsolutePath),
+      fs.stat(secondAbsolutePath)
+    ]);
+
+    if (firstStat.size !== secondStat.size) {
+      return false;
+    }
+
+    const [firstHash, secondHash] = await Promise.all([
+      generateFileHash(firstAbsolutePath),
+      generateFileHash(secondAbsolutePath)
+    ]);
+
+    return firstHash === secondHash;
+  } catch {
+    return false;
+  }
 };
 
 const ensureCategoryAndSubCategoryRelation = async (
@@ -225,6 +276,7 @@ const getProductList = async (params: GetProductListParams) => {
         createdAt: 'desc'
       },
       select: {
+        id: true,
         title: true,
         stock: true,
         availability: true,
@@ -266,6 +318,7 @@ const getProductList = async (params: GetProductListParams) => {
       totalPage: total === 0 ? 0 : Math.ceil(total / limit)
     },
     data: products.map((product) => ({
+      id: product.id,
       title: product.title,
       stock: product.stock,
       availability: product.availability,
@@ -289,16 +342,22 @@ const getSingleProduct = async (id: string) => {
   return product;
 };
 
-const updateProduct = async (id: string, payload: CreateProductPayload) => {
+const updateProduct = async (id: string, payload: UpdateProductPayload) => {
   const existingProduct = await prisma.product.findUnique({
     where: { id },
     select: {
       id: true,
+      categoryId: true,
+      subCategoryId: true,
       videoPath: true,
       videoUrl: true,
       variants: {
+        orderBy: {
+          createdAt: 'asc'
+        },
         select: {
-          imagePath: true
+          imagePath: true,
+          imageUrl: true
         }
       }
     }
@@ -308,52 +367,127 @@ const updateProduct = async (id: string, payload: CreateProductPayload) => {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Product not found');
   }
 
-  await ensureCategoryAndSubCategoryRelation(payload.categoryId, payload.subCategoryId);
+  const nextCategoryId = payload.categoryId ?? existingProduct.categoryId;
+  const nextSubCategoryId = payload.subCategoryId ?? existingProduct.subCategoryId;
+
+  await ensureCategoryAndSubCategoryRelation(nextCategoryId, nextSubCategoryId);
 
   try {
     const extraDescriptionDelta = payload.extraDescriptionDelta as Prisma.InputJsonValue | undefined;
+    const nextVariantsFromPayload = payload.variants;
+    const shouldReplaceVariants = Array.isArray(nextVariantsFromPayload);
+    let nextVariants: CreateProductVariantWithMedia[] = shouldReplaceVariants
+      ? nextVariantsFromPayload
+      : [];
+
+    const uploadedFilesToDelete: string[] = [];
+
+    if (shouldReplaceVariants && nextVariants.length === existingProduct.variants.length) {
+      nextVariants = await Promise.all(
+        nextVariants.map(async (variant, index) => {
+          const existingVariant = existingProduct.variants[index];
+
+          if (!existingVariant) {
+            return variant;
+          }
+
+          const isSameFile = await areRelativeFilesIdentical(variant.imagePath, existingVariant.imagePath);
+
+          if (!isSameFile) {
+            return variant;
+          }
+
+          uploadedFilesToDelete.push(variant.imagePath);
+
+          return {
+            ...variant,
+            imagePath: existingVariant.imagePath,
+            imageUrl: existingVariant.imageUrl
+          };
+        })
+      );
+    }
+
+    let nextVideoPath = payload.videoPath ?? existingProduct.videoPath;
+    let nextVideoUrl = payload.videoUrl ?? existingProduct.videoUrl;
+
+    if (payload.videoPath && existingProduct.videoPath) {
+      const isSameVideo = await areRelativeFilesIdentical(payload.videoPath, existingProduct.videoPath);
+
+      if (isSameVideo) {
+        uploadedFilesToDelete.push(payload.videoPath);
+        nextVideoPath = existingProduct.videoPath;
+        nextVideoUrl = existingProduct.videoUrl;
+      }
+    }
 
     const updatedProduct = await prisma.product.update({
       where: { id },
       data: {
-        categoryId: payload.categoryId,
-        subCategoryId: payload.subCategoryId,
-        title: payload.title,
-        slug: generateSlug(payload.title),
-        descriptionDelta: payload.descriptionDelta as Prisma.InputJsonValue,
-        descriptionHtml: payload.descriptionHtml,
-        extraDescriptionDelta,
-        extraDescriptionHtml: payload.extraDescriptionHtml,
-        weight: payload.weight,
-        material: payload.material,
-        stock: payload.stock,
-        availability: payload.availability,
-        status: payload.status,
-        videoUrl: payload.videoUrl ?? existingProduct.videoUrl,
-        videoPath: payload.videoPath ?? existingProduct.videoPath,
-        variants: {
-          deleteMany: {},
-          create: payload.variants.map((variant) => ({
-            actualPrice: variant.actualPrice,
-            discountedPrice: variant.discountedPrice,
-            color: variant.color,
-            size: variant.size,
-            imageUrl: variant.imageUrl,
-            imagePath: variant.imagePath
-          }))
-        }
+        ...(payload.categoryId ? { categoryId: payload.categoryId } : {}),
+        ...(payload.subCategoryId ? { subCategoryId: payload.subCategoryId } : {}),
+        ...(payload.title
+          ? {
+              title: payload.title,
+              slug: generateSlug(payload.title)
+            }
+          : {}),
+        ...(payload.descriptionDelta
+          ? { descriptionDelta: payload.descriptionDelta as Prisma.InputJsonValue }
+          : {}),
+        ...(typeof payload.descriptionHtml === 'string'
+          ? { descriptionHtml: payload.descriptionHtml }
+          : {}),
+        ...(typeof payload.extraDescriptionDelta !== 'undefined' ? { extraDescriptionDelta } : {}),
+        ...(typeof payload.extraDescriptionHtml !== 'undefined'
+          ? { extraDescriptionHtml: payload.extraDescriptionHtml }
+          : {}),
+        ...(payload.weight ? { weight: payload.weight } : {}),
+        ...(payload.material ? { material: payload.material } : {}),
+        ...(typeof payload.stock === 'boolean' ? { stock: payload.stock } : {}),
+        ...(typeof payload.availability === 'boolean' ? { availability: payload.availability } : {}),
+        ...(payload.status ? { status: payload.status } : {}),
+        videoUrl: nextVideoUrl,
+        videoPath: nextVideoPath,
+        ...(shouldReplaceVariants
+          ? {
+              variants: {
+                deleteMany: {},
+                create: nextVariants.map((variant) => ({
+                  actualPrice: variant.actualPrice,
+                  discountedPrice: variant.discountedPrice,
+                  color: variant.color,
+                  size: variant.size,
+                  imageUrl: variant.imageUrl,
+                  imagePath: variant.imagePath
+                }))
+              }
+            }
+          : {})
       },
       select: productSelect
     });
 
-    const oldFilePaths = existingProduct.variants.map((variant) => variant.imagePath);
+    const oldFilePaths: string[] = [...uploadedFilesToDelete];
 
-    if (payload.videoPath && existingProduct.videoPath && payload.videoPath !== existingProduct.videoPath) {
+    if (shouldReplaceVariants) {
+      const nextVariantImagePathSet = new Set(nextVariants.map((variant) => variant.imagePath));
+
+      oldFilePaths.push(
+        ...existingProduct.variants
+          .filter((variant) => !nextVariantImagePathSet.has(variant.imagePath))
+          .map((variant) => variant.imagePath)
+      );
+    }
+
+    if (payload.videoPath && existingProduct.videoPath && nextVideoPath !== existingProduct.videoPath) {
       oldFilePaths.push(existingProduct.videoPath);
     }
 
     await Promise.all(
-      oldFilePaths.map((filePath) => removeLocalFile(path.join(process.cwd(), filePath)))
+      Array.from(new Set(oldFilePaths)).map((filePath) =>
+        removeLocalFile(path.join(process.cwd(), filePath))
+      )
     );
 
     return updatedProduct;

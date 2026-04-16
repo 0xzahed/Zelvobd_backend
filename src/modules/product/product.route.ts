@@ -20,7 +20,7 @@ productRouter.post(
   productController.createProduct
 );
 
-productRouter.put(
+productRouter.patch(
   '/:id',
   productMediaUpload.fields([
     { name: 'variantImages', maxCount: 50 },

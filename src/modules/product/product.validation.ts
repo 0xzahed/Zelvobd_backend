@@ -131,7 +131,52 @@ export const createProductSchema = z
     }
   });
 
-export const updateProductSchema = createProductSchema;
+export const updateProductSchema = z
+  .object({
+    categoryId: z.string().trim().min(1, 'Category is required').optional(),
+    subCategoryId: z.string().trim().min(1, 'Subcategory is required').optional(),
+    title: z.string().trim().min(1, 'Product title is required').max(220, 'Product title is too long').optional(),
+    descriptionDelta: z.preprocess(parseJsonFromString, quillDeltaSchema).optional(),
+    descriptionHtml: z.string().trim().min(1, 'Description HTML is required').optional(),
+    extraDescriptionDelta: z.preprocess(parseJsonFromString, quillDeltaSchema).optional(),
+    extraDescriptionHtml: z
+      .string()
+      .trim()
+      .min(1, 'Extra description HTML cannot be empty')
+      .optional(),
+    weight: z.string().trim().min(1, 'Product weight is required').max(80, 'Product weight is too long').optional(),
+    material: z.string().trim().min(1, 'Material is required').max(120, 'Material is too long').optional(),
+    stock: booleanFromStringSchema.optional(),
+    availability: booleanFromStringSchema.optional(),
+    status: productStatusSchema.optional(),
+    variants: z.preprocess(
+      parseJsonFromString,
+      z.array(createProductVariantSchema).min(1, 'At least one product variant is required').max(50)
+    ).optional()
+  })
+  .superRefine((value, context) => {
+    const hasDescriptionDelta = typeof value.descriptionDelta !== 'undefined';
+    const hasDescriptionHtml = typeof value.descriptionHtml !== 'undefined';
+
+    if (hasDescriptionDelta !== hasDescriptionHtml) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['descriptionDelta'],
+        message: 'Provide both descriptionDelta and descriptionHtml together, or omit both'
+      });
+    }
+
+    const hasExtraDescriptionDelta = typeof value.extraDescriptionDelta !== 'undefined';
+    const hasExtraDescriptionHtml = typeof value.extraDescriptionHtml !== 'undefined';
+
+    if (hasExtraDescriptionDelta !== hasExtraDescriptionHtml) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['extraDescriptionDelta'],
+        message: 'Provide both extraDescriptionDelta and extraDescriptionHtml together, or omit both'
+      });
+    }
+  });
 
 export const getProductListQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
@@ -142,4 +187,5 @@ export const getProductListQuerySchema = z.object({
 });
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;
+export type UpdateProductInput = z.infer<typeof updateProductSchema>;
 export type GetProductListQueryInput = z.infer<typeof getProductListQuerySchema>;
