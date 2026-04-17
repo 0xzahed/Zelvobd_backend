@@ -9,6 +9,7 @@ import { prisma } from '../lib/prisma';
 type JwtPayload = {
   adminId: string;
   email: string;
+  tokenType: 'access';
 };
 
 export const requireAdminAuth: RequestHandler = async (req, _res, next) => {
@@ -27,7 +28,8 @@ export const requireAdminAuth: RequestHandler = async (req, _res, next) => {
       typeof decoded === 'string' ||
       !decoded ||
       typeof decoded.adminId !== 'string' ||
-      typeof decoded.email !== 'string'
+      typeof decoded.email !== 'string' ||
+      decoded.tokenType !== 'access'
     ) {
       throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid authorization token');
     }
@@ -49,6 +51,11 @@ export const requireAdminAuth: RequestHandler = async (req, _res, next) => {
 
     next();
   } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      next(new ApiError(StatusCodes.UNAUTHORIZED, 'Authorization token expired'));
+      return;
+    }
+
     if (error instanceof jwt.JsonWebTokenError) {
       next(new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid authorization token'));
       return;

@@ -11,7 +11,11 @@ const envSchema = z.object({
   JWT_ACCESS_SECRET: z
     .string()
     .min(32, 'JWT_ACCESS_SECRET must be at least 32 characters for security'),
-  JWT_ACCESS_EXPIRES_IN: z.string().default('1d')
+  JWT_ACCESS_EXPIRES_IN: z.string().default('1d'),
+  JWT_REFRESH_SECRET: z
+    .string()
+    .min(32, 'JWT_REFRESH_SECRET must be at least 32 characters for security'),
+  JWT_REFRESH_EXPIRES_IN: z.string().default('30d')
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -27,5 +31,7 @@ export const env = {
   corsOrigin: parsed.data.CORS_ORIGIN,
   databaseUrl: parsed.data.DATABASE_URL,
   jwtAccessSecret: parsed.data.JWT_ACCESS_SECRET,
-  jwtAccessExpiresIn: parsed.data.JWT_ACCESS_EXPIRES_IN
+  jwtAccessExpiresIn: parsed.data.JWT_ACCESS_EXPIRES_IN,
+  jwtRefreshSecret: parsed.data.JWT_REFRESH_SECRET,
+  jwtRefreshExpiresIn: parsed.data.JWT_REFRESH_EXPIRES_IN
 };

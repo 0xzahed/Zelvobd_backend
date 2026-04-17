@@ -26,14 +26,34 @@ enum FlashSaleDiscountType {
 }
 
 model Admin {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String              @id @default(cuid())
+  email         String              @unique
+  password      String
+  isActive      Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  refreshTokens AdminRefreshToken[]
 
   @@map("admins")
+}
+
+model AdminRefreshToken {
+  id        String    @id @default(cuid())
+  adminId   String
+  sessionId String    @unique
+  tokenHash String    @unique
+  expiresAt DateTime
+  lastUsedAt DateTime?
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+  @@map("admin_refresh_tokens")
 }
 
 model Category {
