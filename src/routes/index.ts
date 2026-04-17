@@ -8,6 +8,7 @@ import { subCategoryRouter } from '../modules/subcategory/subcategory.route';
 import { adminRouter } from '../modules/admin/admin.route';
 import { productRouter } from '../modules/product/product.route';
 import { bannerRouter } from '../modules/banner/banner.route';
+import { flashSaleRouter } from '../modules/flashsale/flashsale.route';
 
 export const router = Router();
 
@@ -18,3 +19,4 @@ router.use('/subcategories', subCategoryRouter);
 router.use('/admins', adminRouter);
 router.use('/products', productRouter);
 router.use('/banners', bannerRouter);
+router.use('/flash-sales', flashSaleRouter);

@@ -20,6 +20,11 @@ enum ProductStatus {
   TRASH
 }
 
+enum FlashSaleDiscountType {
+  PERCENT
+  TAKA
+}
+
 model Admin {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -83,6 +88,7 @@ model Product {
   category    Category         @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   subCategory SubCategory      @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
   variants    ProductVariant[]
+  flashSaleItems FlashSaleProduct[]
 
   @@index([categoryId])
   @@index([subCategoryId])
@@ -117,4 +123,36 @@ model Banner {
   updatedAt DateTime @updatedAt
 
   @@map("banners")
+}
+
+model FlashSaleCampaign {
+  id            String                @id @default(cuid())
+  title         String
+  startAt       DateTime
+  endAt         DateTime
+  discountType  FlashSaleDiscountType
+  discountValue Decimal               @db.Decimal(10, 2)
+  products      FlashSaleProduct[]
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  @@index([startAt])
+  @@index([endAt])
+  @@map("flash_sale_campaigns")
+}
+
+model FlashSaleProduct {
+  id                  String            @id @default(cuid())
+  flashSaleCampaignId String
+  productId           String
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  flashSaleCampaign FlashSaleCampaign @relation(fields: [flashSaleCampaignId], references: [id], onDelete: Cascade)
+  product           Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([flashSaleCampaignId, productId])
+  @@index([flashSaleCampaignId])
+  @@index([productId])
+  @@map("flash_sale_products")
 }

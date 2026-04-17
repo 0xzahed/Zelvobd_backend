@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 
+import { mapDatesToBangladeshTime, toBangladeshIsoString } from './time';
+
 type SendResponseParams<T> = {
   statusCode: number;
   message: string;
@@ -19,7 +21,7 @@ export const sendResponse = <T>(
     statusCode,
     path: req.originalUrl.split('?')[0],
     method: req.method,
-    timestamp: new Date().toISOString(),
-    data: data ?? null
+    timestamp: toBangladeshIsoString(new Date()),
+    data: data == null ? null : mapDatesToBangladeshTime(data)
   });
 };
