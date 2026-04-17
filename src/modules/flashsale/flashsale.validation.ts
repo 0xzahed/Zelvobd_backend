@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { parseDateInBangladeshTimezone } from '../../utils/time';
+
 const FLASH_SALE_DISCOUNT_TYPES = ['PERCENT', 'TAKA'] as const;
 
 const productIdSchema = z.string().trim().min(1, 'Valid product id is required');
@@ -9,11 +11,16 @@ const productIdsSchema = z
   .min(1, 'At least one product is required')
   .max(500, 'Too many products in one request');
 
+const bangladeshDateTimeSchema = z.preprocess(
+  (value) => parseDateInBangladeshTimezone(value) ?? value,
+  z.date({ message: 'Valid date-time is required' })
+);
+
 export const createFlashSaleCampaignSchema = z
   .object({
     title: z.string().trim().min(1, 'Campaign title is required').max(220, 'Campaign title is too long'),
-    startAt: z.coerce.date(),
-    endAt: z.coerce.date(),
+    startAt: bangladeshDateTimeSchema,
+    endAt: bangladeshDateTimeSchema,
     discountType: z.enum(FLASH_SALE_DISCOUNT_TYPES),
     discountValue: z.coerce.number().positive('Discount value must be greater than 0'),
     productIds: productIdsSchema
@@ -51,8 +58,8 @@ export const getFlashSaleCampaignListQuerySchema = z.object({
 
 export const updateFlashSaleCampaignTimeSchema = z
   .object({
-    startAt: z.coerce.date().optional(),
-    endAt: z.coerce.date().optional()
+    startAt: bangladeshDateTimeSchema.optional(),
+    endAt: bangladeshDateTimeSchema.optional()
   })
   .superRefine((value, context) => {
     const { startAt, endAt } = value;
