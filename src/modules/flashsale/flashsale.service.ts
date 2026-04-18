@@ -45,7 +45,8 @@ const flashSaleCampaignDetailsSelect = {
           title: true,
           slug: true,
           stock: true,
-          availability: true
+          availability: true,
+          isFreeDelivery: true
         }
       }
     }
@@ -473,6 +474,7 @@ const getActiveFlashSaleProducts = async (params: GetActiveFlashSaleProductsQuer
         slug: true,
         stock: true,
         availability: true,
+        isFreeDelivery: true,
         videoUrl: true,
         category: {
           select: {

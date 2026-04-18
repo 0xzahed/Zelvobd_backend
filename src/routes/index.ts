@@ -9,6 +9,7 @@ import { adminRouter } from '../modules/admin/admin.route';
 import { productRouter } from '../modules/product/product.route';
 import { bannerRouter } from '../modules/banner/banner.route';
 import { flashSaleRouter } from '../modules/flashsale/flashsale.route';
+import { freeDeliveryRouter } from '../modules/freeDelivery/freeDelivery.route';
 
 export const router = Router();
 
@@ -20,3 +21,4 @@ router.use('/admins', adminRouter);
 router.use('/products', productRouter);
 router.use('/banners', bannerRouter);
 router.use('/flash-sales', flashSaleRouter);
+router.use('/free-delivery', freeDeliveryRouter);

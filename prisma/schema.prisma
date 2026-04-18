@@ -57,27 +57,29 @@ model AdminRefreshToken {
 }
 
 model Category {
-  id            String        @id @default(cuid())
-  title         String        @unique
-  imageUrl      String
-  imagePath     String
-  subCategories SubCategory[]
-  products      Product[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id                        String                       @id @default(cuid())
+  title                     String                       @unique
+  imageUrl                  String
+  imagePath                 String
+  subCategories             SubCategory[]
+  products                  Product[]
+  freeDeliveryCampaignItems FreeDeliveryCampaignCategory[]
+  createdAt                 DateTime                     @default(now())
+  updatedAt                 DateTime                     @updatedAt
 
   @@map("categories")
 }
 
 model SubCategory {
-  id         String   @id @default(cuid())
-  categoryId String
-  title      String
-  imageUrl   String
-  imagePath  String
-  products   Product[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                        String                          @id @default(cuid())
+  categoryId                String
+  title                     String
+  imageUrl                  String
+  imagePath                 String
+  products                  Product[]
+  freeDeliveryCampaignItems FreeDeliveryCampaignSubCategory[]
+  createdAt                 DateTime                        @default(now())
+  updatedAt                 DateTime                        @updatedAt
 
   category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
@@ -99,20 +101,103 @@ model Product {
   material              String
   stock                 Boolean         @default(true)
   availability          Boolean         @default(true)
+  isFreeDelivery        Boolean         @default(false)
   status                ProductStatus   @default(PENDING)
   videoUrl              String?
   videoPath             String?
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
 
-  category    Category         @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  subCategory SubCategory      @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
-  variants    ProductVariant[]
-  flashSaleItems FlashSaleProduct[]
+  category                  Category                           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  subCategory               SubCategory                        @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+  variants                  ProductVariant[]
+  flashSaleItems            FlashSaleProduct[]
+  freeDeliveryCampaignItems FreeDeliveryCampaignProduct[]
+  freeDeliveryExclusions    FreeDeliveryCampaignExcludedProduct[]
 
   @@index([categoryId])
   @@index([subCategoryId])
+  @@index([isFreeDelivery])
   @@map("products")
+}
+
+model FreeDeliveryCampaign {
+  id               String                                @id @default(cuid())
+  singletonKey     String                                @unique @default("GLOBAL")
+  title            String
+  isActive         Boolean                               @default(true)
+  categories       FreeDeliveryCampaignCategory[]
+  subCategories    FreeDeliveryCampaignSubCategory[]
+  products         FreeDeliveryCampaignProduct[]
+  excludedProducts FreeDeliveryCampaignExcludedProduct[]
+  createdAt        DateTime                              @default(now())
+  updatedAt        DateTime                              @updatedAt
+
+  @@map("free_delivery_campaigns")
+}
+
+model FreeDeliveryCampaignCategory {
+  id                     String               @id @default(cuid())
+  freeDeliveryCampaignId String
+  categoryId             String
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  freeDeliveryCampaign FreeDeliveryCampaign @relation(fields: [freeDeliveryCampaignId], references: [id], onDelete: Cascade)
+  category             Category             @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([freeDeliveryCampaignId, categoryId])
+  @@index([freeDeliveryCampaignId])
+  @@index([categoryId])
+  @@map("free_delivery_campaign_categories")
+}
+
+model FreeDeliveryCampaignSubCategory {
+  id                     String               @id @default(cuid())
+  freeDeliveryCampaignId String
+  subCategoryId          String
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  freeDeliveryCampaign FreeDeliveryCampaign @relation(fields: [freeDeliveryCampaignId], references: [id], onDelete: Cascade)
+  subCategory          SubCategory          @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([freeDeliveryCampaignId, subCategoryId])
+  @@index([freeDeliveryCampaignId])
+  @@index([subCategoryId])
+  @@map("free_delivery_campaign_sub_categories")
+}
+
+model FreeDeliveryCampaignProduct {
+  id                     String               @id @default(cuid())
+  freeDeliveryCampaignId String
+  productId              String
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  freeDeliveryCampaign FreeDeliveryCampaign @relation(fields: [freeDeliveryCampaignId], references: [id], onDelete: Cascade)
+  product              Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([freeDeliveryCampaignId, productId])
+  @@index([freeDeliveryCampaignId])
+  @@index([productId])
+  @@map("free_delivery_campaign_products")
+}
+
+model FreeDeliveryCampaignExcludedProduct {
+  id                     String               @id @default(cuid())
+  freeDeliveryCampaignId String
+  productId              String
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  freeDeliveryCampaign FreeDeliveryCampaign @relation(fields: [freeDeliveryCampaignId], references: [id], onDelete: Cascade)
+  product              Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([freeDeliveryCampaignId, productId])
+  @@index([freeDeliveryCampaignId])
+  @@index([productId])
+  @@map("free_delivery_campaign_excluded_products")
 }
 
 model ProductVariant {

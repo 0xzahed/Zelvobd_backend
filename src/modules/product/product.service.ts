@@ -9,6 +9,7 @@ import { StatusCodes } from 'http-status-codes';
 import { ApiError } from '../../core/errors/ApiError';
 import { prisma } from '../../lib/prisma';
 import { removeLocalFile } from '../../utils/file';
+import { freeDeliveryService } from '../freeDelivery/freeDelivery.service';
 import { CreateProductInput, UpdateProductInput } from './product.validation';
 
 type CreateProductVariantWithMedia = CreateProductInput['variants'][number] & {
@@ -50,6 +51,7 @@ const productSelect = {
   material: true,
   stock: true,
   availability: true,
+  isFreeDelivery: true,
   status: true,
   videoUrl: true,
   createdAt: true,
@@ -211,6 +213,11 @@ const createProduct = async (payload: CreateProductPayload) => {
   await ensureCategoryAndSubCategoryRelation(payload.categoryId, payload.subCategoryId);
 
   try {
+    const isFreeDelivery = await freeDeliveryService.resolveFreeDeliveryForProduct({
+      categoryId: payload.categoryId,
+      subCategoryId: payload.subCategoryId
+    });
+
     const extraDescriptionDelta = payload.extraDescriptionDelta as Prisma.InputJsonValue | undefined;
 
     const product = await prisma.product.create({
@@ -227,6 +234,7 @@ const createProduct = async (payload: CreateProductPayload) => {
         material: payload.material,
         stock: payload.stock,
         availability: payload.availability,
+        isFreeDelivery,
         status: payload.status,
         videoUrl: payload.videoUrl,
         videoPath: payload.videoPath,
@@ -280,6 +288,7 @@ const getProductList = async (params: GetProductListParams) => {
         title: true,
         stock: true,
         availability: true,
+        isFreeDelivery: true,
         category: {
           select: {
             id: true,
@@ -322,6 +331,7 @@ const getProductList = async (params: GetProductListParams) => {
       title: product.title,
       stock: product.stock,
       availability: product.availability,
+      isFreeDelivery: product.isFreeDelivery,
       category: product.category,
       subCategory: product.subCategory,
       firstVariant: product.variants[0] ?? null
@@ -373,6 +383,12 @@ const updateProduct = async (id: string, payload: UpdateProductPayload) => {
   await ensureCategoryAndSubCategoryRelation(nextCategoryId, nextSubCategoryId);
 
   try {
+    const nextIsFreeDelivery = await freeDeliveryService.resolveFreeDeliveryForProduct({
+      productId: existingProduct.id,
+      categoryId: nextCategoryId,
+      subCategoryId: nextSubCategoryId
+    });
+
     const extraDescriptionDelta = payload.extraDescriptionDelta as Prisma.InputJsonValue | undefined;
     const nextVariantsFromPayload = payload.variants;
     const shouldReplaceVariants = Array.isArray(nextVariantsFromPayload);
@@ -446,6 +462,7 @@ const updateProduct = async (id: string, payload: UpdateProductPayload) => {
         ...(payload.material ? { material: payload.material } : {}),
         ...(typeof payload.stock === 'boolean' ? { stock: payload.stock } : {}),
         ...(typeof payload.availability === 'boolean' ? { availability: payload.availability } : {}),
+        isFreeDelivery: nextIsFreeDelivery,
         ...(payload.status ? { status: payload.status } : {}),
         videoUrl: nextVideoUrl,
         videoPath: nextVideoPath,
@@ -567,6 +584,11 @@ const copyProduct = async (id: string) => {
   const createdCopyFilePaths: string[] = [];
 
   try {
+    const copiedIsFreeDelivery = await freeDeliveryService.resolveFreeDeliveryForProduct({
+      categoryId: existingProduct.categoryId,
+      subCategoryId: existingProduct.subCategoryId
+    });
+
     const copiedVariants = await Promise.all(
       existingProduct.variants.map(async (variant) => {
         const copiedImage = await duplicateLocalMediaFile(variant.imagePath);
@@ -610,6 +632,7 @@ const copyProduct = async (id: string) => {
         material: existingProduct.material,
         stock: existingProduct.stock,
         availability: existingProduct.availability,
+        isFreeDelivery: copiedIsFreeDelivery,
         status: existingProduct.status,
         videoPath: copiedVideoPath,
         videoUrl: copiedVideoUrl,
