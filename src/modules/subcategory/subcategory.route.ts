@@ -7,6 +7,7 @@ import { subCategoryController } from './subcategory.controller';
 export const subCategoryRouter = Router();
 
 subCategoryRouter.get('/', subCategoryController.getSubCategoryList);
+subCategoryRouter.get('/:id', subCategoryController.getSingleSubCategory);
 
 subCategoryRouter.use(requireAdminAuth);
 
@@ -15,7 +16,6 @@ subCategoryRouter.post(
 	subCategoryImageUpload.single('image'),
 	subCategoryController.createSubCategory
 );
-subCategoryRouter.get('/:id', subCategoryController.getSingleSubCategory);
 subCategoryRouter.patch(
 	'/:id',
 	subCategoryImageUpload.single('image'),

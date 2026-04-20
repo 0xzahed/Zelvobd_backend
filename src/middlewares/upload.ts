@@ -5,11 +5,12 @@ import { StatusCodes } from 'http-status-codes';
 import multer from 'multer';
 
 import { ApiError } from '../core/errors/ApiError';
+import { uploadRootPath } from '../utils/paths';
 
 const MAX_IMAGE_SIZE_IN_MB = 2;
 const MAX_PRODUCT_VIDEO_SIZE_IN_MB = 100;
 const MAX_PRODUCT_UPLOAD_SIZE_IN_MB = 100;
-const rootUploadDirectoryPath = path.join(process.cwd(), 'upload');
+const rootUploadDirectoryPath = uploadRootPath;
 
 export const PRODUCT_IMAGE_MAX_SIZE_BYTES = MAX_IMAGE_SIZE_IN_MB * 1024 * 1024;
 export const PRODUCT_VIDEO_MAX_SIZE_BYTES = MAX_PRODUCT_VIDEO_SIZE_IN_MB * 1024 * 1024;

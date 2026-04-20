@@ -1,11 +1,10 @@
-import path from 'node:path';
-
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { StatusCodes } from 'http-status-codes';
 
 import { ApiError } from '../../core/errors/ApiError';
 import { prisma } from '../../lib/prisma';
 import { removeLocalFile } from '../../utils/file';
+import { resolveStoredRelativePath } from '../../utils/paths';
 
 type CreateSubCategoryPayload = {
   categoryId: string;
@@ -152,7 +151,7 @@ const updateSubCategory = async (id: string, payload: UpdateSubCategoryPayload) 
     });
 
     if (payload.imagePath && existingSubCategory.imagePath !== payload.imagePath) {
-      await removeLocalFile(path.join(process.cwd(), existingSubCategory.imagePath));
+      await removeLocalFile(resolveStoredRelativePath(existingSubCategory.imagePath));
     }
 
     return updatedSubCategory;
@@ -174,7 +173,7 @@ const deleteSubCategory = async (id: string) => {
     where: { id }
   });
 
-  await removeLocalFile(path.join(process.cwd(), existingSubCategory.imagePath));
+  await removeLocalFile(resolveStoredRelativePath(existingSubCategory.imagePath));
 };
 
 export const subCategoryService = {

@@ -9,6 +9,7 @@ import { StatusCodes } from 'http-status-codes';
 import { ApiError } from '../../core/errors/ApiError';
 import { prisma } from '../../lib/prisma';
 import { removeLocalFile } from '../../utils/file';
+import { resolveStoredRelativePath } from '../../utils/paths';
 import { freeDeliveryService } from '../freeDelivery/freeDelivery.service';
 import { CreateProductInput, UpdateProductInput } from './product.validation';
 
@@ -116,8 +117,8 @@ const duplicateLocalMediaFile = async (
   const copiedRelativePath = normalizeRelativeFilePath(path.join(parsedOriginalPath.dir, copiedFileName));
 
   await fs.copyFile(
-    path.join(process.cwd(), originalRelativePath),
-    path.join(process.cwd(), copiedRelativePath)
+    resolveStoredRelativePath(originalRelativePath),
+    resolveStoredRelativePath(copiedRelativePath)
   );
 
   return {
@@ -146,8 +147,8 @@ const areRelativeFilesIdentical = async (
   firstRelativePath: string,
   secondRelativePath: string
 ): Promise<boolean> => {
-  const firstAbsolutePath = path.join(process.cwd(), firstRelativePath);
-  const secondAbsolutePath = path.join(process.cwd(), secondRelativePath);
+  const firstAbsolutePath = resolveStoredRelativePath(firstRelativePath);
+  const secondAbsolutePath = resolveStoredRelativePath(secondRelativePath);
 
   try {
     const [firstStat, secondStat] = await Promise.all([
@@ -286,6 +287,9 @@ const getProductList = async (params: GetProductListParams) => {
       select: {
         id: true,
         title: true,
+        descriptionHtml: true,
+        weight: true,
+        material: true,
         stock: true,
         availability: true,
         isFreeDelivery: true,
@@ -302,7 +306,6 @@ const getProductList = async (params: GetProductListParams) => {
           }
         },
         variants: {
-          take: 1,
           orderBy: {
             createdAt: 'asc'
           },
@@ -329,11 +332,15 @@ const getProductList = async (params: GetProductListParams) => {
     data: products.map((product) => ({
       id: product.id,
       title: product.title,
+      descriptionHtml: product.descriptionHtml,
+      weight: product.weight,
+      material: product.material,
       stock: product.stock,
       availability: product.availability,
       isFreeDelivery: product.isFreeDelivery,
       category: product.category,
       subCategory: product.subCategory,
+      variants: product.variants,
       firstVariant: product.variants[0] ?? null
     }))
   };
@@ -503,7 +510,7 @@ const updateProduct = async (id: string, payload: UpdateProductPayload) => {
 
     await Promise.all(
       Array.from(new Set(oldFilePaths)).map((filePath) =>
-        removeLocalFile(path.join(process.cwd(), filePath))
+        removeLocalFile(resolveStoredRelativePath(filePath))
       )
     );
 
@@ -541,7 +548,7 @@ const deleteProduct = async (id: string) => {
   ];
 
   await Promise.all(
-    filePathsToDelete.map((filePath) => removeLocalFile(path.join(process.cwd(), filePath)))
+    filePathsToDelete.map((filePath) => removeLocalFile(resolveStoredRelativePath(filePath)))
   );
 };
 
@@ -646,7 +653,7 @@ const copyProduct = async (id: string) => {
     return copiedProduct;
   } catch (error) {
     await Promise.all(
-      createdCopyFilePaths.map((filePath) => removeLocalFile(path.join(process.cwd(), filePath)))
+      createdCopyFilePaths.map((filePath) => removeLocalFile(resolveStoredRelativePath(filePath)))
     );
 
     normalizePrismaError(error);

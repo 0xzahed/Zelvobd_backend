@@ -1,10 +1,9 @@
-import path from 'node:path';
-
 import { StatusCodes } from 'http-status-codes';
 
 import { ApiError } from '../../core/errors/ApiError';
 import { prisma } from '../../lib/prisma';
 import { removeLocalFile } from '../../utils/file';
+import { resolveStoredRelativePath } from '../../utils/paths';
 
 type CreateBannerPayload = {
   title: string;
@@ -74,7 +73,7 @@ const updateBanner = async (id: string, payload: UpdateBannerPayload) => {
   });
 
   if (payload.imagePath && payload.imagePath !== existingBanner.imagePath) {
-    await removeLocalFile(path.join(process.cwd(), existingBanner.imagePath));
+    await removeLocalFile(resolveStoredRelativePath(existingBanner.imagePath));
   }
 
   return updatedBanner;
@@ -97,7 +96,7 @@ const deleteBanner = async (id: string) => {
     where: { id }
   });
 
-  await removeLocalFile(path.join(process.cwd(), existingBanner.imagePath));
+  await removeLocalFile(resolveStoredRelativePath(existingBanner.imagePath));
 };
 
 export const bannerService = {

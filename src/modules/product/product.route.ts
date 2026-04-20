@@ -6,11 +6,11 @@ import { productController } from './product.controller';
 
 export const productRouter = Router();
 
+productRouter.get('/', productController.getProductList);
+productRouter.get('/:id', productController.getSingleProduct);
 
 productRouter.use(requireAdminAuth);
 
-productRouter.get('/', productController.getProductList);
-productRouter.get('/:id', productController.getSingleProduct);
 productRouter.post(
   '/',
   productMediaUpload.fields([

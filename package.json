@@ -17,7 +17,9 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:db:push": "prisma db push",
-    "admin:seed": "tsx src/scripts/seedAdmin.ts"
+    "admin:seed": "tsx src/scripts/seedAdmin.ts",
+    "storefront:seed": "node --import tsx src/scripts/seedStorefrontDemo.ts",
+    "admin:catalog:seed:unsplash": "node --import tsx src/scripts/seedAdminPanelUnsplash.ts"
   },
   "keywords": [
     "ecommerce",
