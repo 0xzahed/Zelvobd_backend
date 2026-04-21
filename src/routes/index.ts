@@ -11,6 +11,7 @@ import { bannerRouter } from '../modules/banner/banner.route';
 import { flashSaleRouter } from '../modules/flashsale/flashsale.route';
 import { freeDeliveryRouter } from '../modules/freeDelivery/freeDelivery.route';
 import { topCatalogRouter } from '../modules/topCatalog/topCatalog.route';
+import { youtubeVideoRouter } from '../modules/youtubeVideo/youtubeVideo.route';
 
 export const router = Router();
 
@@ -24,3 +25,4 @@ router.use('/banners', bannerRouter);
 router.use('/flash-sales', flashSaleRouter);
 router.use('/free-delivery', freeDeliveryRouter);
 router.use('/top-catalog', topCatalogRouter);
+router.use('/youtube-videos', youtubeVideoRouter);

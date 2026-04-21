@@ -243,6 +243,15 @@ model Banner {
   @@map("banners")
 }
 
+model YoutubeVideo {
+  id        String   @id @default(cuid())
+  url       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("youtube_videos")
+}
+
 model FlashSaleCampaign {
   id            String                @id @default(cuid())
   title         String
