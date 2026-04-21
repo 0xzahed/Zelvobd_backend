@@ -64,10 +64,23 @@ model Category {
   subCategories             SubCategory[]
   products                  Product[]
   freeDeliveryCampaignItems FreeDeliveryCampaignCategory[]
+  topCatalogItems           TopCatalogCategory[]
   createdAt                 DateTime                     @default(now())
   updatedAt                 DateTime                     @updatedAt
 
   @@map("categories")
+}
+
+model TopCatalogCategory {
+  id         String   @id @default(cuid())
+  categoryId String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@map("top_catalog_categories")
 }
 
 model SubCategory {
