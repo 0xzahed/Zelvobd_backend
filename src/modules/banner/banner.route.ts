@@ -7,6 +7,8 @@ import { bannerController } from './banner.controller';
 export const bannerRouter = Router();
 
 bannerRouter.get('/', bannerController.getAllBanners);
+bannerRouter.get('/home-page', bannerController.getHomePageBanners);
+bannerRouter.get('/category/:categoryId', bannerController.getBannersByCategoryId);
 bannerRouter.get('/:id', bannerController.getSingleBanner);
 
 bannerRouter.use(requireAdminAuth);

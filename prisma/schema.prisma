@@ -63,6 +63,7 @@ model Category {
   imagePath                 String
   subCategories             SubCategory[]
   products                  Product[]
+  banners                   Banner[]
   freeDeliveryCampaignItems FreeDeliveryCampaignCategory[]
   topCatalogItems           TopCatalogCategory[]
   createdAt                 DateTime                     @default(now())
@@ -232,13 +233,20 @@ model ProductVariant {
 }
 
 model Banner {
-  id        String   @id @default(cuid())
-  title     String
-  url       String
-  imageUrl  String
-  imagePath String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String    @id @default(cuid())
+  title      String
+  url        String
+  categoryId String?
+  inHomePage Boolean   @default(false)
+  imageUrl   String
+  imagePath  String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([categoryId])
+  @@index([inHomePage])
 
   @@map("banners")
 }

@@ -23,6 +23,16 @@ const getBannerIdFromParams = (req: Request): string => {
   return bannerId;
 };
 
+const getCategoryIdFromParams = (req: Request): string => {
+  const categoryId = req.params.categoryId;
+
+  if (typeof categoryId !== 'string' || categoryId.length === 0) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Valid category id is required');
+  }
+
+  return categoryId;
+};
+
 const createBanner = catchAsync(
   async (req, res) => {
     const uploadedFile = req.file;
@@ -39,6 +49,8 @@ const createBanner = catchAsync(
     const banner = await bannerService.createBanner({
       title: parsedBody.data.title,
       url: parsedBody.data.url,
+      categoryId: parsedBody.data.categoryId,
+      inHomePage: parsedBody.data.inHomePage,
       imageUrl: `/upload/banners/${uploadedFile.filename}`,
       imagePath: `upload/banners/${uploadedFile.filename}`
     });
@@ -70,6 +82,26 @@ const getAllBanners = catchAsync(async (req, res) => {
   });
 });
 
+const getBannersByCategoryId = catchAsync(async (req, res) => {
+  const banners = await bannerService.getBannersByCategoryId(getCategoryIdFromParams(req));
+
+  sendResponse(req, res, {
+    statusCode: StatusCodes.OK,
+    message: 'Banners fetched successfully',
+    data: banners
+  });
+});
+
+const getHomePageBanners = catchAsync(async (req, res) => {
+  const banners = await bannerService.getHomePageBanners();
+
+  sendResponse(req, res, {
+    statusCode: StatusCodes.OK,
+    message: 'Homepage banners fetched successfully',
+    data: banners
+  });
+});
+
 const getSingleBanner = catchAsync(async (req, res) => {
   const banner = await bannerService.getSingleBanner(getBannerIdFromParams(req));
 
@@ -92,13 +124,15 @@ const updateBanner = catchAsync(
     if (!uploadedFile && Object.keys(parsedBody.data).length === 0) {
       throw new ApiError(
         StatusCodes.BAD_REQUEST,
-        'At least one field (title, url, or image) is required for update'
+        'At least one field (title, url, categoryId, inHomePage, or image) is required for update'
       );
     }
 
     const payload: {
       title?: string;
       url?: string;
+      categoryId?: string;
+      inHomePage?: boolean;
       imageUrl?: string;
       imagePath?: string;
     } = {
@@ -142,6 +176,8 @@ const deleteBanner = catchAsync(async (req, res) => {
 export const bannerController = {
   createBanner,
   getAllBanners,
+  getBannersByCategoryId,
+  getHomePageBanners,
   getSingleBanner,
   updateBanner,
   deleteBanner

@@ -8,6 +8,8 @@ import { resolveStoredRelativePath } from '../../utils/paths';
 type CreateBannerPayload = {
   title: string;
   url: string;
+  categoryId: string;
+  inHomePage: boolean;
   imageUrl: string;
   imagePath: string;
 };
@@ -15,6 +17,8 @@ type CreateBannerPayload = {
 type UpdateBannerPayload = {
   title?: string;
   url?: string;
+  categoryId?: string;
+  inHomePage?: boolean;
   imageUrl?: string;
   imagePath?: string;
 };
@@ -23,12 +27,37 @@ const bannerSelect = {
   id: true,
   title: true,
   url: true,
+  categoryId: true,
+  inHomePage: true,
   imageUrl: true,
+  category: {
+    select: {
+      id: true,
+      title: true
+    }
+  },
   createdAt: true,
   updatedAt: true
 } as const;
 
+const ensureCategoryExists = async (categoryId: string): Promise<void> => {
+  const existingCategory = await prisma.category.findUnique({
+    where: {
+      id: categoryId
+    },
+    select: {
+      id: true
+    }
+  });
+
+  if (!existingCategory) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Category not found');
+  }
+};
+
 const createBanner = async (payload: CreateBannerPayload) => {
+  await ensureCategoryExists(payload.categoryId);
+
   return prisma.banner.create({
     data: payload,
     select: bannerSelect
@@ -37,6 +66,32 @@ const createBanner = async (payload: CreateBannerPayload) => {
 
 const getAllBanners = async () => {
   return prisma.banner.findMany({
+    orderBy: {
+      createdAt: 'desc'
+    },
+    select: bannerSelect
+  });
+};
+
+const getBannersByCategoryId = async (categoryId: string) => {
+  await ensureCategoryExists(categoryId);
+
+  return prisma.banner.findMany({
+    where: {
+      categoryId
+    },
+    orderBy: {
+      createdAt: 'desc'
+    },
+    select: bannerSelect
+  });
+};
+
+const getHomePageBanners = async () => {
+  return prisma.banner.findMany({
+    where: {
+      inHomePage: true
+    },
     orderBy: {
       createdAt: 'desc'
     },
@@ -64,6 +119,10 @@ const updateBanner = async (id: string, payload: UpdateBannerPayload) => {
 
   if (!existingBanner) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Banner not found');
+  }
+
+  if (typeof payload.categoryId === 'string') {
+    await ensureCategoryExists(payload.categoryId);
   }
 
   const updatedBanner = await prisma.banner.update({
@@ -102,6 +161,8 @@ const deleteBanner = async (id: string) => {
 export const bannerService = {
   createBanner,
   getAllBanners,
+  getBannersByCategoryId,
+  getHomePageBanners,
   getSingleBanner,
   updateBanner,
   deleteBanner
