@@ -7,7 +7,7 @@ import multer from 'multer';
 import { ApiError } from '../core/errors/ApiError';
 import { uploadRootPath } from '../utils/paths';
 
-const MAX_IMAGE_SIZE_IN_MB = 2;
+const MAX_IMAGE_SIZE_IN_MB = 20;
 const MAX_PRODUCT_VIDEO_SIZE_IN_MB = 100;
 const MAX_PRODUCT_UPLOAD_SIZE_IN_MB = 100;
 const rootUploadDirectoryPath = uploadRootPath;

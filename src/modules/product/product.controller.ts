@@ -102,7 +102,7 @@ const validateAndBuildCreateProductPayload = (req: Request) => {
   }
 
   if (variantImages.some((variantImage) => variantImage.size > PRODUCT_IMAGE_MAX_SIZE_BYTES)) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Each variant image size must be less than 2MB');
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Each variant image size must be less than 20MB');
   }
 
   if (videoFile && videoFile.size > PRODUCT_VIDEO_MAX_SIZE_BYTES) {
@@ -183,7 +183,7 @@ const validateAndBuildUpdateProductPayload = (req: Request) => {
   }
 
   if (variantImages.some((variantImage) => variantImage.size > PRODUCT_IMAGE_MAX_SIZE_BYTES)) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Each variant image size must be less than 2MB');
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Each variant image size must be less than 20MB');
   }
 
   if (videoFile && videoFile.size > PRODUCT_VIDEO_MAX_SIZE_BYTES) {
