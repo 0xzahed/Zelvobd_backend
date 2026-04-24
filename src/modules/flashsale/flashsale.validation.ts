@@ -115,6 +115,14 @@ export const updateFlashSaleCampaignProductsSchema = z
   });
 
 export const getActiveFlashSaleProductsQuerySchema = z.object({
+  campaignId: z.string().trim().min(1, 'campaignId is required'),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(10),
+  search: z.string().trim().optional(),
+  categoryId: z.string().trim().min(1, 'categoryId is invalid').optional()
+});
+
+export const getAllActiveFlashSaleProductsQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(10),
   search: z.string().trim().optional(),
@@ -129,4 +137,7 @@ export type UpdateFlashSaleCampaignProductsInput = z.infer<
 >;
 export type GetActiveFlashSaleProductsQueryInput = z.infer<
   typeof getActiveFlashSaleProductsQuerySchema
+>;
+export type GetAllActiveFlashSaleProductsQueryInput = z.infer<
+  typeof getAllActiveFlashSaleProductsQuerySchema
 >;

@@ -6,6 +6,7 @@ import { flashSaleController } from './flashsale.controller';
 export const flashSaleRouter = Router();
 
 flashSaleRouter.get('/active', flashSaleController.getActiveFlashSaleCampaign);
+flashSaleRouter.get('/active/products/all', flashSaleController.getAllActiveFlashSaleProducts);
 flashSaleRouter.get('/active/products', flashSaleController.getActiveFlashSaleProducts);
 
 flashSaleRouter.use(requireAdminAuth);

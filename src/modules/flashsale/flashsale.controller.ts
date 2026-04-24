@@ -8,6 +8,7 @@ import { sendResponse } from '../../utils/sendResponse';
 import { flashSaleService } from './flashsale.service';
 import {
   createFlashSaleCampaignSchema,
+  getAllActiveFlashSaleProductsQuerySchema,
   getActiveFlashSaleProductsQuerySchema,
   getFlashSaleCampaignListQuerySchema,
   updateFlashSaleCampaignProductsSchema,
@@ -124,12 +125,12 @@ const deleteFlashSaleCampaign = catchAsync(async (req, res) => {
 });
 
 const getActiveFlashSaleCampaign = catchAsync(async (req, res) => {
-  const campaign = await flashSaleService.getActiveFlashSaleCampaign();
+  const campaigns = await flashSaleService.getActiveFlashSaleCampaign();
 
   sendResponse(req, res, {
     statusCode: StatusCodes.OK,
-    message: 'Active flash sale fetched successfully',
-    data: campaign
+    message: 'Active and upcoming flash sale campaigns fetched successfully',
+    data: campaigns
   });
 });
 
@@ -144,9 +145,30 @@ const getActiveFlashSaleProducts = catchAsync(async (req, res) => {
 
   sendResponse(req, res, {
     statusCode: StatusCodes.OK,
-    message: 'Active flash sale products fetched successfully',
+    message: 'Flash sale campaign products fetched successfully',
     data: {
       campaign: result.campaign,
+      meta: result.meta,
+      products: result.data
+    }
+  });
+});
+
+const getAllActiveFlashSaleProducts = catchAsync(async (req, res) => {
+  const parsedQuery = getAllActiveFlashSaleProductsQuerySchema.safeParse(req.query);
+
+  if (!parsedQuery.success) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, getValidationErrorMessage(parsedQuery.error));
+  }
+
+  const result = await flashSaleService.getAllActiveFlashSaleProducts(parsedQuery.data);
+
+  sendResponse(req, res, {
+    statusCode: StatusCodes.OK,
+    message: 'All active flash sale campaign products fetched successfully',
+    data: {
+      serverTime: result.serverTime,
+      campaigns: result.campaigns,
       meta: result.meta,
       products: result.data
     }
@@ -161,5 +183,6 @@ export const flashSaleController = {
   updateFlashSaleCampaignProducts,
   deleteFlashSaleCampaign,
   getActiveFlashSaleCampaign,
-  getActiveFlashSaleProducts
+  getActiveFlashSaleProducts,
+  getAllActiveFlashSaleProducts
 };

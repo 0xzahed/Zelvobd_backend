@@ -5,6 +5,7 @@ import { ApiError } from '../../core/errors/ApiError';
 import { prisma } from '../../lib/prisma';
 import {
   CreateFlashSaleCampaignInput,
+  GetAllActiveFlashSaleProductsQueryInput,
   GetActiveFlashSaleProductsQueryInput,
   GetFlashSaleCampaignListQueryInput,
   UpdateFlashSaleCampaignProductsInput,
@@ -85,6 +86,10 @@ const getRemainingSeconds = (endAt: Date, now: Date = new Date()): number => {
   return Math.max(0, Math.floor((endAt.getTime() - now.getTime()) / 1000));
 };
 
+const getStartsInSeconds = (startAt: Date, now: Date = new Date()): number => {
+  return Math.max(0, Math.floor((startAt.getTime() - now.getTime()) / 1000));
+};
+
 const mapCampaignSummary = (
   campaign: {
     id: string;
@@ -110,6 +115,32 @@ const mapCampaignSummary = (
     productCount: campaign._count.products,
     createdAt: campaign.createdAt,
     updatedAt: campaign.updatedAt
+  };
+};
+
+const mapCampaignWithTiming = (
+  campaign: Parameters<typeof mapCampaignSummary>[0],
+  now: Date = new Date()
+) => {
+  const mappedCampaign = mapCampaignSummary(campaign, now);
+
+  if (mappedCampaign.status === 'ACTIVE') {
+    return {
+      ...mappedCampaign,
+      remainingSeconds: getRemainingSeconds(campaign.endAt, now)
+    };
+  }
+
+  if (mappedCampaign.status === 'SCHEDULED') {
+    return {
+      ...mappedCampaign,
+      startsInSeconds: getStartsInSeconds(campaign.startAt, now)
+    };
+  }
+
+  return {
+    ...mappedCampaign,
+    remainingSeconds: 0
   };
 };
 
@@ -158,42 +189,85 @@ const ensureProductsExist = async (productIds: string[]): Promise<string[]> => {
   return uniqueProductIds;
 };
 
-const ensureNoFlashSaleTimeRangeOverlap = async (
-  startAt: Date,
-  endAt: Date,
-  excludedCampaignId?: string
-): Promise<void> => {
-  const overlappingCampaign = await prisma.flashSaleCampaign.findFirst({
+const ensureCategoryExists = async (categoryId: string): Promise<void> => {
+  const categoryExists = await prisma.category.findUnique({
     where: {
-      ...(excludedCampaignId
-        ? {
-            id: {
-              not: excludedCampaignId
-            }
-          }
-        : {}),
-      startAt: {
-        lt: endAt
-      },
-      endAt: {
-        gt: startAt
-      }
+      id: categoryId
     },
     select: {
       id: true
     }
   });
 
-  if (overlappingCampaign) {
+  if (!categoryExists) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Category not found');
+  }
+};
+
+const ensureProductsNotAssignedToAnotherCampaign = async (
+  productIds: string[],
+  excludedCampaignId?: string
+): Promise<void> => {
+  const uniqueProductIds = deduplicateProductIds(productIds);
+
+  if (uniqueProductIds.length === 0) {
+    return;
+  }
+
+  const existingAssignments = await prisma.flashSaleProduct.findMany({
+    where: {
+      productId: {
+        in: uniqueProductIds
+      },
+      ...(excludedCampaignId
+        ? {
+            flashSaleCampaignId: {
+              not: excludedCampaignId
+            }
+          }
+        : {})
+    },
+    select: {
+      productId: true,
+      flashSaleCampaign: {
+        select: {
+          id: true,
+          title: true
+        }
+      }
+    }
+  });
+
+  if (existingAssignments.length > 0) {
+    const campaignByProductId = new Map(
+      existingAssignments.map((assignment) => [assignment.productId, assignment.flashSaleCampaign])
+    );
+
+    const conflictMessages = Array.from(campaignByProductId.entries()).map(
+      ([productId, campaign]) => `${productId} (campaign: ${campaign.title} - ${campaign.id})`
+    );
+
     throw new ApiError(
       StatusCodes.CONFLICT,
-      'Flash sale time range overlaps with an existing campaign'
+      `Products already assigned to another flash sale campaign: ${conflictMessages.join(', ')}`
     );
   }
 };
 
-const getActiveFlashSaleCampaignSummary = async (now: Date = new Date()) => {
-  return prisma.flashSaleCampaign.findFirst({
+const getActiveAndUpcomingFlashSaleCampaignSummaries = async (now: Date = new Date()) => {
+  return prisma.flashSaleCampaign.findMany({
+    where: {
+      endAt: {
+        gt: now
+      }
+    },
+    orderBy: [{ startAt: 'asc' }, { createdAt: 'desc' }],
+    select: flashSaleCampaignSummarySelect
+  });
+};
+
+const getActiveFlashSaleCampaignSummaries = async (now: Date = new Date()) => {
+  return prisma.flashSaleCampaign.findMany({
     where: {
       startAt: {
         lte: now
@@ -202,12 +276,45 @@ const getActiveFlashSaleCampaignSummary = async (now: Date = new Date()) => {
         gt: now
       }
     },
-    orderBy: {
-      startAt: 'desc'
-    },
+    orderBy: [{ startAt: 'asc' }, { createdAt: 'desc' }],
     select: flashSaleCampaignSummarySelect
   });
 };
+
+const flashSaleProductListSelect = {
+  id: true,
+  title: true,
+  slug: true,
+  stock: true,
+  availability: true,
+  isFreeDelivery: true,
+  videoUrl: true,
+  category: {
+    select: {
+      id: true,
+      title: true
+    }
+  },
+  subCategory: {
+    select: {
+      id: true,
+      title: true
+    }
+  },
+  variants: {
+    orderBy: {
+      createdAt: 'asc' as const
+    },
+    select: {
+      id: true,
+      actualPrice: true,
+      discountedPrice: true,
+      color: true,
+      size: true,
+      imageUrl: true
+    }
+  }
+} as const;
 
 const createFlashSaleCampaign = async (payload: CreateFlashSaleCampaignInput) => {
   if (payload.endAt <= payload.startAt) {
@@ -219,8 +326,7 @@ const createFlashSaleCampaign = async (payload: CreateFlashSaleCampaignInput) =>
   }
 
   const productIds = await ensureProductsExist(payload.productIds);
-
-  await ensureNoFlashSaleTimeRangeOverlap(payload.startAt, payload.endAt);
+  await ensureProductsNotAssignedToAnotherCampaign(productIds);
 
   const campaign = await prisma.flashSaleCampaign.create({
     data: {
@@ -314,8 +420,6 @@ const updateFlashSaleCampaignTime = async (id: string, payload: UpdateFlashSaleC
     throw new ApiError(StatusCodes.BAD_REQUEST, 'End time must be greater than start time');
   }
 
-  await ensureNoFlashSaleTimeRangeOverlap(nextStartAt, nextEndAt, id);
-
   const updatedCampaign = await prisma.flashSaleCampaign.update({
     where: { id },
     data: {
@@ -349,6 +453,8 @@ const updateFlashSaleCampaignProducts = async (
   if (addProductIds.length > 0 || removeProductIds.length > 0) {
     await ensureProductsExist([...addProductIds, ...removeProductIds]);
   }
+
+  await ensureProductsNotAssignedToAnotherCampaign(addProductIds, id);
 
   await prisma.$transaction(async (tx) => {
     if (addProductIds.length > 0) {
@@ -395,58 +501,42 @@ const deleteFlashSaleCampaign = async (id: string) => {
 
 const getActiveFlashSaleCampaign = async () => {
   const now = new Date();
-  const activeCampaign = await getActiveFlashSaleCampaignSummary(now);
-
-  if (!activeCampaign) {
-    return null;
-  }
+  const campaigns = await getActiveAndUpcomingFlashSaleCampaignSummaries(now);
 
   return {
-    ...mapCampaignSummary(activeCampaign, now),
     serverTime: now,
-    remainingSeconds: getRemainingSeconds(activeCampaign.endAt, now)
+    campaigns: campaigns.map((campaign) => mapCampaignWithTiming(campaign, now))
   };
 };
 
 const getActiveFlashSaleProducts = async (params: GetActiveFlashSaleProductsQueryInput) => {
-  const { page, limit, search, categoryId } = params;
+  const { campaignId, page, limit, search, categoryId } = params;
   const skip = (page - 1) * limit;
   const now = new Date();
 
-  const activeCampaign = await getActiveFlashSaleCampaignSummary(now);
+  const campaign = await prisma.flashSaleCampaign.findUnique({
+    where: {
+      id: campaignId
+    },
+    select: flashSaleCampaignSummarySelect
+  });
 
-  if (!activeCampaign) {
-    return {
-      campaign: null,
-      meta: {
-        page,
-        limit,
-        total: 0,
-        totalPage: 0
-      },
-      data: []
-    };
+  if (!campaign) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Flash sale campaign not found');
+  }
+
+  if (campaign.endAt <= now) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'This flash sale campaign is expired');
   }
 
   if (categoryId) {
-    const categoryExists = await prisma.category.findUnique({
-      where: {
-        id: categoryId
-      },
-      select: {
-        id: true
-      }
-    });
-
-    if (!categoryExists) {
-      throw new ApiError(StatusCodes.NOT_FOUND, 'Category not found');
-    }
+    await ensureCategoryExists(categoryId);
   }
 
   const whereClause = {
     flashSaleItems: {
       some: {
-        flashSaleCampaignId: activeCampaign.id
+        flashSaleCampaignId: campaign.id
       }
     },
     ...(search
@@ -468,51 +558,17 @@ const getActiveFlashSaleProducts = async (params: GetActiveFlashSaleProductsQuer
       orderBy: {
         createdAt: 'desc'
       },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        stock: true,
-        availability: true,
-        isFreeDelivery: true,
-        videoUrl: true,
-        category: {
-          select: {
-            id: true,
-            title: true
-          }
-        },
-        subCategory: {
-          select: {
-            id: true,
-            title: true
-          }
-        },
-        variants: {
-          orderBy: {
-            createdAt: 'asc'
-          },
-          select: {
-            id: true,
-            actualPrice: true,
-            discountedPrice: true,
-            color: true,
-            size: true,
-            imageUrl: true
-          }
-        }
-      }
+      select: flashSaleProductListSelect
     }),
     prisma.product.count({ where: whereClause })
   ]);
 
-  const campaignDiscountValue = toNumber(activeCampaign.discountValue);
+  const campaignDiscountValue = toNumber(campaign.discountValue);
 
   return {
     campaign: {
-      ...mapCampaignSummary(activeCampaign, now),
-      serverTime: now,
-      remainingSeconds: getRemainingSeconds(activeCampaign.endAt, now)
+      ...mapCampaignWithTiming(campaign, now),
+      serverTime: now
     },
     meta: {
       page,
@@ -531,12 +587,136 @@ const getActiveFlashSaleProducts = async (params: GetActiveFlashSaleProductsQuer
           discountedPrice,
           flashSalePrice: calculateFlashSalePrice(
             discountedPrice,
-            activeCampaign.discountType,
+            campaign.discountType,
             campaignDiscountValue
           )
         };
       })
     }))
+  };
+};
+
+const getAllActiveFlashSaleProducts = async (params: GetAllActiveFlashSaleProductsQueryInput) => {
+  const { page, limit, search, categoryId } = params;
+  const skip = (page - 1) * limit;
+  const now = new Date();
+
+  const activeCampaigns = await getActiveFlashSaleCampaignSummaries(now);
+
+  if (activeCampaigns.length === 0) {
+    return {
+      serverTime: now,
+      campaigns: [],
+      meta: {
+        page,
+        limit,
+        total: 0,
+        totalPage: 0
+      },
+      data: []
+    };
+  }
+
+  if (categoryId) {
+    await ensureCategoryExists(categoryId);
+  }
+
+  const activeCampaignIds = activeCampaigns.map((campaign) => campaign.id);
+
+  const whereClause = {
+    flashSaleItems: {
+      some: {
+        flashSaleCampaignId: {
+          in: activeCampaignIds
+        }
+      }
+    },
+    ...(search
+      ? {
+          title: {
+            contains: search,
+            mode: 'insensitive' as const
+          }
+        }
+      : {}),
+    ...(categoryId ? { categoryId } : {})
+  };
+
+  const [products, total] = await prisma.$transaction([
+    prisma.product.findMany({
+      where: whereClause,
+      skip,
+      take: limit,
+      orderBy: {
+        createdAt: 'desc'
+      },
+      select: flashSaleProductListSelect
+    }),
+    prisma.product.count({ where: whereClause })
+  ]);
+
+  const productIds = products.map((product) => product.id);
+
+  const productCampaignAssignments =
+    productIds.length > 0
+      ? await prisma.flashSaleProduct.findMany({
+          where: {
+            productId: {
+              in: productIds
+            },
+            flashSaleCampaignId: {
+              in: activeCampaignIds
+            }
+          },
+          select: {
+            productId: true,
+            flashSaleCampaign: {
+              select: flashSaleCampaignSummarySelect
+            }
+          }
+        })
+      : [];
+
+  const campaignByProductId = new Map<string, (typeof activeCampaigns)[number]>();
+
+  for (const assignment of productCampaignAssignments) {
+    if (!campaignByProductId.has(assignment.productId)) {
+      campaignByProductId.set(assignment.productId, assignment.flashSaleCampaign);
+    }
+  }
+
+  return {
+    serverTime: now,
+    campaigns: activeCampaigns.map((campaign) => mapCampaignWithTiming(campaign, now)),
+    meta: {
+      page,
+      limit,
+      total,
+      totalPage: total === 0 ? 0 : Math.ceil(total / limit)
+    },
+    data: products.map((product) => {
+      const relatedCampaign = campaignByProductId.get(product.id);
+      const campaignDiscountType = relatedCampaign?.discountType;
+      const campaignDiscountValue = relatedCampaign ? toNumber(relatedCampaign.discountValue) : 0;
+
+      return {
+        ...product,
+        campaign: relatedCampaign ? mapCampaignWithTiming(relatedCampaign, now) : null,
+        variants: product.variants.map((variant) => {
+          const discountedPrice = toNumber(variant.discountedPrice);
+
+          return {
+            ...variant,
+            actualPrice: toNumber(variant.actualPrice),
+            discountedPrice,
+            flashSalePrice:
+              campaignDiscountType && relatedCampaign
+                ? calculateFlashSalePrice(discountedPrice, campaignDiscountType, campaignDiscountValue)
+                : discountedPrice
+          };
+        })
+      };
+    })
   };
 };
 
@@ -548,5 +728,6 @@ export const flashSaleService = {
   updateFlashSaleCampaignProducts,
   deleteFlashSaleCampaign,
   getActiveFlashSaleCampaign,
-  getActiveFlashSaleProducts
+  getActiveFlashSaleProducts,
+  getAllActiveFlashSaleProducts
 };
