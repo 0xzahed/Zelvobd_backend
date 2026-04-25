@@ -59,6 +59,7 @@ model AdminRefreshToken {
 model Category {
   id                        String                       @id @default(cuid())
   title                     String                       @unique
+  slug                      String?                      @unique
   imageUrl                  String
   imagePath                 String
   subCategories             SubCategory[]
@@ -88,6 +89,7 @@ model SubCategory {
   id                        String                          @id @default(cuid())
   categoryId                String
   title                     String
+  slug                      String?                         @unique
   imageUrl                  String
   imagePath                 String
   products                  Product[]

@@ -5,6 +5,7 @@ import { ApiError } from '../../core/errors/ApiError';
 import { prisma } from '../../lib/prisma';
 import { removeLocalFile } from '../../utils/file';
 import { resolveStoredRelativePath } from '../../utils/paths';
+import { createUniqueSlug } from '../../utils/slug';
 
 type CreateSubCategoryPayload = {
   categoryId: string;
@@ -31,6 +32,7 @@ const subCategoryPublicSelect = {
   id: true,
   categoryId: true,
   title: true,
+  slug: true,
   imageUrl: true,
   createdAt: true,
   updatedAt: true,
@@ -44,10 +46,7 @@ const subCategoryPublicSelect = {
 
 const normalizePrismaError = (error: unknown): never => {
   if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
-    throw new ApiError(
-      StatusCodes.CONFLICT,
-      'Subcategory title already exists for this category'
-    );
+    throw new ApiError(StatusCodes.CONFLICT, 'Subcategory title or slug already exists');
   }
 
   throw error;
@@ -67,9 +66,25 @@ const ensureCategoryExists = async (categoryId: string): Promise<void> => {
 const createSubCategory = async (payload: CreateSubCategoryPayload) => {
   await ensureCategoryExists(payload.categoryId);
 
+  const slug = await createUniqueSlug(payload.title, 'subcategory', async (candidateSlug) => {
+    const existingSubCategory = await prisma.subCategory.findUnique({
+      where: {
+        slug: candidateSlug
+      },
+      select: {
+        id: true
+      }
+    });
+
+    return Boolean(existingSubCategory);
+  });
+
   try {
     return await prisma.subCategory.create({
-      data: payload,
+      data: {
+        ...payload,
+        slug
+      },
       select: subCategoryPublicSelect
     });
   } catch (error) {

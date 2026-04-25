@@ -5,6 +5,7 @@ import { ApiError } from '../../core/errors/ApiError';
 import { prisma } from '../../lib/prisma';
 import { removeLocalFile } from '../../utils/file';
 import { resolveStoredRelativePath } from '../../utils/paths';
+import { createUniqueSlug } from '../../utils/slug';
 
 type CreateCategoryPayload = {
   title: string;
@@ -27,6 +28,7 @@ type GetCategoryListParams = {
 const categoryPublicSelect = {
   id: true,
   title: true,
+  slug: true,
   imageUrl: true,
   createdAt: true,
   updatedAt: true
@@ -34,16 +36,32 @@ const categoryPublicSelect = {
 
 const normalizePrismaError = (error: unknown): never => {
   if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
-    throw new ApiError(StatusCodes.CONFLICT, 'Category title already exists');
+    throw new ApiError(StatusCodes.CONFLICT, 'Category title or slug already exists');
   }
 
   throw error;
 };
 
 const createCategory = async (payload: CreateCategoryPayload) => {
+  const slug = await createUniqueSlug(payload.title, 'category', async (candidateSlug) => {
+    const existingCategory = await prisma.category.findUnique({
+      where: {
+        slug: candidateSlug
+      },
+      select: {
+        id: true
+      }
+    });
+
+    return Boolean(existingCategory);
+  });
+
   try {
     return await prisma.category.create({
-      data: payload,
+      data: {
+        ...payload,
+        slug
+      },
       select: categoryPublicSelect
     });
   } catch (error) {
