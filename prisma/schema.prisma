@@ -225,6 +225,8 @@ model ProductVariant {
   size            String
   imageUrl        String
   imagePath       String
+  barcodeUrl      String?
+  barcodePath     String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

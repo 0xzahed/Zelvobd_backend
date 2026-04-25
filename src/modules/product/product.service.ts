@@ -10,6 +10,7 @@ import { ApiError } from '../../core/errors/ApiError';
 import { prisma } from '../../lib/prisma';
 import { removeLocalFile } from '../../utils/file';
 import { resolveStoredRelativePath } from '../../utils/paths';
+import { generateAndSaveBarcode } from '../../utils/barcode';
 import { freeDeliveryService } from '../freeDelivery/freeDelivery.service';
 import { CreateProductInput, UpdateProductInput } from './product.validation';
 
@@ -60,13 +61,15 @@ const productSelect = {
   category: {
     select: {
       id: true,
-      title: true
+      title: true,
+      slug: true
     }
   },
   subCategory: {
     select: {
       id: true,
-      title: true
+      title: true,
+      slug: true
     }
   },
   variants: {
@@ -80,6 +83,7 @@ const productSelect = {
       color: true,
       size: true,
       imageUrl: true,
+      barcodeUrl: true,
       createdAt: true,
       updatedAt: true
     }
@@ -210,6 +214,64 @@ const normalizePrismaError = (error: unknown): never => {
   throw error;
 };
 
+/**
+ * Fetches slug info needed to build barcode URLs for a product.
+ */
+const fetchProductSlugInfo = async (productId: string) => {
+  return prisma.product.findUnique({
+    where: { id: productId },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      category: { select: { slug: true } },
+      subCategory: { select: { slug: true } },
+      variants: {
+        orderBy: { createdAt: 'asc' },
+        select: { id: true, color: true, barcodePath: true }
+      }
+    }
+  });
+};
+
+/**
+ * Generates barcodes for all variants of a product and saves barcodePath/barcodeUrl
+ * to each ProductVariant record. Old barcode files (if any) are deleted first.
+ */
+const generateBarcodesForProduct = async (productId: string): Promise<void> => {
+  const product = await fetchProductSlugInfo(productId);
+
+  if (!product) return;
+
+  const categorySlug = product.category?.slug;
+  const subCategorySlug = product.subCategory?.slug;
+
+  if (!categorySlug || !subCategorySlug) return;
+
+  await Promise.all(
+    product.variants.map(async (variant) => {
+      // Delete old barcode file if one exists
+      if (variant.barcodePath) {
+        await removeLocalFile(resolveStoredRelativePath(variant.barcodePath));
+      }
+
+      const { barcodeUrl, barcodePath } = await generateAndSaveBarcode({
+        variantId: variant.id,
+        productTitle: product.title,
+        variantColor: variant.color,
+        productSlug: product.slug,
+        categorySlug,
+        subCategorySlug
+      });
+
+      await prisma.productVariant.update({
+        where: { id: variant.id },
+        data: { barcodeUrl, barcodePath }
+      });
+    })
+  );
+};
+
 const createProduct = async (payload: CreateProductPayload) => {
   await ensureCategoryAndSubCategoryRelation(payload.categoryId, payload.subCategoryId);
 
@@ -251,6 +313,11 @@ const createProduct = async (payload: CreateProductPayload) => {
         }
       },
       select: productSelect
+    });
+
+    // Generate barcodes asynchronously after product + variants exist in DB
+    generateBarcodesForProduct(product.id).catch((err) => {
+      console.error(`[Barcode] Failed to generate barcodes for product ${product.id}:`, err);
     });
 
     return product;
@@ -310,11 +377,13 @@ const getProductList = async (params: GetProductListParams) => {
             createdAt: 'asc'
           },
           select: {
+            id: true,
             actualPrice: true,
             discountedPrice: true,
             color: true,
             size: true,
-            imageUrl: true
+            imageUrl: true,
+            barcodeUrl: true
           }
         }
       }
@@ -364,6 +433,7 @@ const updateProduct = async (id: string, payload: UpdateProductPayload) => {
     where: { id },
     select: {
       id: true,
+      title: true,
       categoryId: true,
       subCategoryId: true,
       videoPath: true,
@@ -373,8 +443,10 @@ const updateProduct = async (id: string, payload: UpdateProductPayload) => {
           createdAt: 'asc'
         },
         select: {
+          id: true,
           imagePath: true,
-          imageUrl: true
+          imageUrl: true,
+          barcodePath: true
         }
       }
     }
@@ -497,10 +569,18 @@ const updateProduct = async (id: string, payload: UpdateProductPayload) => {
     if (shouldReplaceVariants) {
       const nextVariantImagePathSet = new Set(nextVariants.map((variant) => variant.imagePath));
 
+      // Delete old variant images that are no longer used
       oldFilePaths.push(
         ...existingProduct.variants
           .filter((variant) => !nextVariantImagePathSet.has(variant.imagePath))
           .map((variant) => variant.imagePath)
+      );
+
+      // Delete old barcode files (new ones will be generated)
+      oldFilePaths.push(
+        ...existingProduct.variants
+          .filter((variant) => variant.barcodePath)
+          .map((variant) => variant.barcodePath as string)
       );
     }
 
@@ -513,6 +593,14 @@ const updateProduct = async (id: string, payload: UpdateProductPayload) => {
         removeLocalFile(resolveStoredRelativePath(filePath))
       )
     );
+
+    // Regenerate barcodes when variants are replaced OR title changed (label text changes)
+    const titleChanged = Boolean(payload.title && payload.title !== existingProduct.title);
+    if (shouldReplaceVariants || titleChanged) {
+      generateBarcodesForProduct(updatedProduct.id).catch((err) => {
+        console.error(`[Barcode] Failed to regenerate barcodes for product ${updatedProduct.id}:`, err);
+      });
+    }
 
     return updatedProduct;
   } catch (error) {
@@ -528,7 +616,8 @@ const deleteProduct = async (id: string) => {
       videoPath: true,
       variants: {
         select: {
-          imagePath: true
+          imagePath: true,
+          barcodePath: true
         }
       }
     }
@@ -544,6 +633,9 @@ const deleteProduct = async (id: string) => {
 
   const filePathsToDelete = [
     ...existingProduct.variants.map((variant) => variant.imagePath),
+    ...existingProduct.variants
+      .filter((variant) => variant.barcodePath)
+      .map((variant) => variant.barcodePath as string),
     ...(existingProduct.videoPath ? [existingProduct.videoPath] : [])
   ];
 
@@ -650,6 +742,11 @@ const copyProduct = async (id: string) => {
       select: productSelect
     });
 
+    // Generate fresh barcodes for the copied product (new slug = different URLs)
+    generateBarcodesForProduct(copiedProduct.id).catch((err) => {
+      console.error(`[Barcode] Failed to generate barcodes for copied product ${copiedProduct.id}:`, err);
+    });
+
     return copiedProduct;
   } catch (error) {
     await Promise.all(
@@ -660,11 +757,34 @@ const copyProduct = async (id: string) => {
   }
 };
 
+/**
+ * Forces regeneration of all variant barcodes for a product.
+ * Useful after a FRONTEND_BASE_URL change or manual admin trigger.
+ */
+const regenerateProductBarcodes = async (id: string) => {
+  const product = await prisma.product.findUnique({
+    where: { id },
+    select: { id: true }
+  });
+
+  if (!product) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Product not found');
+  }
+
+  await generateBarcodesForProduct(id);
+
+  return prisma.product.findUnique({
+    where: { id },
+    select: productSelect
+  });
+};
+
 export const productService = {
   createProduct,
   getProductList,
   getSingleProduct,
   updateProduct,
   deleteProduct,
-  copyProduct
+  copyProduct,
+  regenerateProductBarcodes
 };

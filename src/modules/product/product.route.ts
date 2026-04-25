@@ -31,3 +31,4 @@ productRouter.patch(
 
 productRouter.delete('/:id', productController.deleteProduct);
 productRouter.post('/:id/copy', productController.copyProduct);
+productRouter.post('/:id/regenerate-barcodes', productController.regenerateBarcodes);

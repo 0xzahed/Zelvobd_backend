@@ -15,7 +15,8 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z
     .string()
     .min(32, 'JWT_REFRESH_SECRET must be at least 32 characters for security'),
-  JWT_REFRESH_EXPIRES_IN: z.string().default('30d')
+  JWT_REFRESH_EXPIRES_IN: z.string().default('30d'),
+  FRONTEND_BASE_URL: z.string().url('FRONTEND_BASE_URL must be a valid URL').default('http://localhost:3000')
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -33,5 +34,6 @@ export const env = {
   jwtAccessSecret: parsed.data.JWT_ACCESS_SECRET,
   jwtAccessExpiresIn: parsed.data.JWT_ACCESS_EXPIRES_IN,
   jwtRefreshSecret: parsed.data.JWT_REFRESH_SECRET,
-  jwtRefreshExpiresIn: parsed.data.JWT_REFRESH_EXPIRES_IN
+  jwtRefreshExpiresIn: parsed.data.JWT_REFRESH_EXPIRES_IN,
+  frontendBaseUrl: parsed.data.FRONTEND_BASE_URL
 };

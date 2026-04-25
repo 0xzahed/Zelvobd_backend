@@ -67,9 +67,11 @@ const createImageUploadMiddleware = (folderName: string) => {
 const productMediaDirectoryPath = path.join(rootUploadDirectoryPath, 'products');
 const productImageDirectoryPath = path.join(productMediaDirectoryPath, 'images');
 const productVideoDirectoryPath = path.join(productMediaDirectoryPath, 'videos');
+const productBarcodeDirectoryPath = path.join(productMediaDirectoryPath, 'barcodes');
 
 ensureDirectoryExists(productImageDirectoryPath);
 ensureDirectoryExists(productVideoDirectoryPath);
+ensureDirectoryExists(productBarcodeDirectoryPath);
 
 const productMediaStorage = multer.diskStorage({
   destination: (_req, file, callback) => {

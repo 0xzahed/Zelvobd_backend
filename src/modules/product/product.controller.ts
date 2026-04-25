@@ -372,11 +372,22 @@ const copyProduct = catchAsync(async (req, res) => {
   });
 });
 
+const regenerateBarcodes = catchAsync(async (req, res) => {
+  const product = await productService.regenerateProductBarcodes(getProductIdFromParams(req));
+
+  sendResponse(req, res, {
+    statusCode: StatusCodes.OK,
+    message: 'Barcodes regenerated successfully',
+    data: product
+  });
+});
+
 export const productController = {
   createProduct,
   getProductList,
   getSingleProduct,
   updateProduct,
   deleteProduct,
-  copyProduct
+  copyProduct,
+  regenerateBarcodes
 };
