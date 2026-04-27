@@ -38,15 +38,15 @@ model Admin {
 }
 
 model AdminRefreshToken {
-  id        String    @id @default(cuid())
-  adminId   String
-  sessionId String    @unique
-  tokenHash String    @unique
-  expiresAt DateTime
+  id         String    @id @default(cuid())
+  adminId    String
+  sessionId  String    @unique
+  tokenHash  String    @unique
+  expiresAt  DateTime
   lastUsedAt DateTime?
-  revokedAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
@@ -57,9 +57,9 @@ model AdminRefreshToken {
 }
 
 model Category {
-  id                        String                       @id @default(cuid())
-  title                     String                       @unique
-  slug                      String?                      @unique
+  id                        String                         @id @default(cuid())
+  title                     String                         @unique
+  slug                      String?                        @unique
   imageUrl                  String
   imagePath                 String
   subCategories             SubCategory[]
@@ -67,8 +67,8 @@ model Category {
   banners                   Banner[]
   freeDeliveryCampaignItems FreeDeliveryCampaignCategory[]
   topCatalogItems           TopCatalogCategory[]
-  createdAt                 DateTime                     @default(now())
-  updatedAt                 DateTime                     @updatedAt
+  createdAt                 DateTime                       @default(now())
+  updatedAt                 DateTime                       @updatedAt
 
   @@map("categories")
 }
@@ -86,16 +86,16 @@ model TopCatalogCategory {
 }
 
 model SubCategory {
-  id                        String                          @id @default(cuid())
+  id                        String                            @id @default(cuid())
   categoryId                String
   title                     String
-  slug                      String?                         @unique
+  slug                      String?                           @unique
   imageUrl                  String
   imagePath                 String
   products                  Product[]
   freeDeliveryCampaignItems FreeDeliveryCampaignSubCategory[]
-  createdAt                 DateTime                        @default(now())
-  updatedAt                 DateTime                        @updatedAt
+  createdAt                 DateTime                          @default(now())
+  updatedAt                 DateTime                          @updatedAt
 
   category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
@@ -104,28 +104,28 @@ model SubCategory {
 }
 
 model Product {
-  id                    String          @id @default(cuid())
+  id                    String        @id @default(cuid())
   categoryId            String
   subCategoryId         String
   title                 String
-  slug                  String          @unique
+  slug                  String        @unique
   descriptionDelta      Json
   descriptionHtml       String
   extraDescriptionDelta Json?
   extraDescriptionHtml  String?
   weight                String
   material              String
-  stock                 Boolean         @default(true)
-  availability          Boolean         @default(true)
-  isFreeDelivery        Boolean         @default(false)
-  status                ProductStatus   @default(PENDING)
+  stock                 Boolean       @default(true)
+  availability          Boolean       @default(true)
+  isFreeDelivery        Boolean       @default(false)
+  status                ProductStatus @default(PENDING)
   videoUrl              String?
   videoPath             String?
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
-  category                  Category                           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  subCategory               SubCategory                        @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+  category                  Category                              @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  subCategory               SubCategory                           @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
   variants                  ProductVariant[]
   flashSaleItems            FlashSaleProduct[]
   freeDeliveryCampaignItems FreeDeliveryCampaignProduct[]
@@ -153,11 +153,11 @@ model FreeDeliveryCampaign {
 }
 
 model FreeDeliveryCampaignCategory {
-  id                     String               @id @default(cuid())
+  id                     String   @id @default(cuid())
   freeDeliveryCampaignId String
   categoryId             String
-  createdAt              DateTime             @default(now())
-  updatedAt              DateTime             @updatedAt
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   freeDeliveryCampaign FreeDeliveryCampaign @relation(fields: [freeDeliveryCampaignId], references: [id], onDelete: Cascade)
   category             Category             @relation(fields: [categoryId], references: [id], onDelete: Cascade)
@@ -169,11 +169,11 @@ model FreeDeliveryCampaignCategory {
 }
 
 model FreeDeliveryCampaignSubCategory {
-  id                     String               @id @default(cuid())
+  id                     String   @id @default(cuid())
   freeDeliveryCampaignId String
   subCategoryId          String
-  createdAt              DateTime             @default(now())
-  updatedAt              DateTime             @updatedAt
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   freeDeliveryCampaign FreeDeliveryCampaign @relation(fields: [freeDeliveryCampaignId], references: [id], onDelete: Cascade)
   subCategory          SubCategory          @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
@@ -185,11 +185,11 @@ model FreeDeliveryCampaignSubCategory {
 }
 
 model FreeDeliveryCampaignProduct {
-  id                     String               @id @default(cuid())
+  id                     String   @id @default(cuid())
   freeDeliveryCampaignId String
   productId              String
-  createdAt              DateTime             @default(now())
-  updatedAt              DateTime             @updatedAt
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   freeDeliveryCampaign FreeDeliveryCampaign @relation(fields: [freeDeliveryCampaignId], references: [id], onDelete: Cascade)
   product              Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -201,11 +201,11 @@ model FreeDeliveryCampaignProduct {
 }
 
 model FreeDeliveryCampaignExcludedProduct {
-  id                     String               @id @default(cuid())
+  id                     String   @id @default(cuid())
   freeDeliveryCampaignId String
   productId              String
-  createdAt              DateTime             @default(now())
-  updatedAt              DateTime             @updatedAt
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   freeDeliveryCampaign FreeDeliveryCampaign @relation(fields: [freeDeliveryCampaignId], references: [id], onDelete: Cascade)
   product              Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -237,21 +237,20 @@ model ProductVariant {
 }
 
 model Banner {
-  id         String    @id @default(cuid())
+  id         String   @id @default(cuid())
   title      String
   url        String
   categoryId String?
-  inHomePage Boolean   @default(false)
+  inHomePage Boolean  @default(false)
   imageUrl   String
   imagePath  String
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   @@index([categoryId])
   @@index([inHomePage])
-
   @@map("banners")
 }
 
@@ -281,11 +280,11 @@ model FlashSaleCampaign {
 }
 
 model FlashSaleProduct {
-  id                  String            @id @default(cuid())
+  id                  String   @id @default(cuid())
   flashSaleCampaignId String
   productId           String
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   flashSaleCampaign FlashSaleCampaign @relation(fields: [flashSaleCampaignId], references: [id], onDelete: Cascade)
   product           Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
