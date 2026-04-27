@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 
-import { mapDatesToBangladeshTime, toBangladeshIsoString } from './time';
+import { mapDatesToBangladeshTime, toBangladeshIsoString } from './time.js';
 
 type SendResponseParams<T> = {
   statusCode: number;

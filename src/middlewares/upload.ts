@@ -4,8 +4,8 @@ import path from 'node:path';
 import { StatusCodes } from 'http-status-codes';
 import multer from 'multer';
 
-import { ApiError } from '../core/errors/ApiError';
-import { uploadRootPath } from '../utils/paths';
+import { ApiError } from '../core/errors/ApiError.js';
+import { uploadRootPath } from '../utils/paths.js';
 
 const MAX_IMAGE_SIZE_IN_MB = 20;
 const MAX_PRODUCT_VIDEO_SIZE_IN_MB = 100;

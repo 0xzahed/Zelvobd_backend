@@ -1,11 +1,11 @@
 import { StatusCodes } from 'http-status-codes';
 
-import { ApiError } from '../../core/errors/ApiError';
-import { prisma } from '../../lib/prisma';
+import { ApiError } from '../../core/errors/ApiError.js';
+import { prisma } from '../../lib/prisma.js';
 import {
   GetTopCatalogProductsQueryInput,
   ReplaceTopCatalogCategoriesInput
-} from './topCatalog.validation';
+} from './topCatalog.validation.js';
 
 const deduplicateIds = (ids: string[]): string[] => {
   return Array.from(new Set(ids));

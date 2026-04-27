@@ -3,21 +3,21 @@ import { Request } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
 
-import { ApiError } from '../../core/errors/ApiError';
+import { ApiError } from '../../core/errors/ApiError.js';
 import {
   PRODUCT_IMAGE_MAX_SIZE_BYTES,
   PRODUCT_VIDEO_MAX_SIZE_BYTES
-} from '../../middlewares/upload';
-import { catchAsync } from '../../utils/catchAsync';
-import { removeLocalFile } from '../../utils/file';
-import { sendResponse } from '../../utils/sendResponse';
-import { productService } from './product.service';
+} from '../../middlewares/upload.js';
+import { catchAsync } from '../../utils/catchAsync.js';
+import { removeLocalFile } from '../../utils/file.js';
+import { sendResponse } from '../../utils/sendResponse.js';
+import { productService } from './product.service.js';
 import {
   createProductSchema,
   getProductListQuerySchema,
   updateProductSchema,
   UpdateProductInput
-} from './product.validation';
+} from './product.validation.js';
 
 type ProductMediaFiles = {
   variantImages?: Express.Multer.File[];

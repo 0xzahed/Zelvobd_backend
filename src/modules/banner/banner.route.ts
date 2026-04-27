@@ -1,8 +1,8 @@
 import { Router } from 'express';
 
-import { requireAdminAuth } from '../../middlewares/requireAdminAuth';
-import { bannerImageUpload } from '../../middlewares/upload';
-import { bannerController } from './banner.controller';
+import { requireAdminAuth } from '../../middlewares/requireAdminAuth.js';
+import { bannerImageUpload } from '../../middlewares/upload.js';
+import { bannerController } from './banner.controller.js';
 
 export const bannerRouter = Router();
 

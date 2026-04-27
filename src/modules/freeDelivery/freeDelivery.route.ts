@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
-import { requireAdminAuth } from '../../middlewares/requireAdminAuth';
-import { freeDeliveryController } from './freeDelivery.controller';
+import { requireAdminAuth } from '../../middlewares/requireAdminAuth.js';
+import { freeDeliveryController } from './freeDelivery.controller.js';
 
 export const freeDeliveryRouter = Router();
 

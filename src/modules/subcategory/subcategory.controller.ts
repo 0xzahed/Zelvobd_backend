@@ -2,16 +2,16 @@ import { Request } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
 
-import { ApiError } from '../../core/errors/ApiError';
-import { removeLocalFile } from '../../utils/file';
-import { catchAsync } from '../../utils/catchAsync';
-import { sendResponse } from '../../utils/sendResponse';
-import { subCategoryService } from './subcategory.service';
+import { ApiError } from '../../core/errors/ApiError.js';
+import { removeLocalFile } from '../../utils/file.js';
+import { catchAsync } from '../../utils/catchAsync.js';
+import { sendResponse } from '../../utils/sendResponse.js';
+import { subCategoryService } from './subcategory.service.js';
 import {
   createSubCategorySchema,
   getSubCategoryListQuerySchema,
   updateSubCategorySchema
-} from './subcategory.validation';
+} from './subcategory.validation.js';
 
 const getValidationErrorMessage = (error: z.ZodError): string => {
   return error.issues[0]?.message ?? 'Validation failed';

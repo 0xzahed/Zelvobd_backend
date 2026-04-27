@@ -2,8 +2,8 @@ import { ErrorRequestHandler } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import multer from 'multer';
 
-import { ApiError } from './ApiError';
-import { sendResponse } from '../../utils/sendResponse';
+import { ApiError } from './ApiError.js';
+import { sendResponse } from '../../utils/sendResponse.js';
 
 export const globalErrorHandler: ErrorRequestHandler = (error, req, res, _next) => {
   const statusCode =

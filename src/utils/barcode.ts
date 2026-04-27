@@ -3,8 +3,8 @@ import { promises as fs } from 'node:fs';
 
 import bwipjs from 'bwip-js';
 
-import { env } from '../config/env';
-import { uploadRootPath } from './paths';
+import { env } from '../config/env.js';
+import { uploadRootPath } from './paths.js';
 
 const barcodesDirectoryPath = path.join(uploadRootPath, 'products', 'barcodes');
 

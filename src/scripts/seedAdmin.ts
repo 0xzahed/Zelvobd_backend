@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import { z } from 'zod';
 
-import { prisma } from '../lib/prisma';
+import { prisma } from '../lib/prisma.js';
 
 dotenv.config();
 

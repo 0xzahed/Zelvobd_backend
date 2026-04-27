@@ -5,11 +5,11 @@ import morgan from 'morgan';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { env } from './config/env';
-import { globalErrorHandler } from './core/errors/globalErrorHandler';
-import { notFoundHandler } from './core/errors/notFoundHandler';
-import { router } from './routes';
-import { uploadRootPath } from './utils/paths';
+import { env } from './config/env.js';
+import { globalErrorHandler } from './core/errors/globalErrorHandler.js';
+import { notFoundHandler } from './core/errors/notFoundHandler.js';
+import { router } from './routes/index.js';
+import { uploadRootPath } from './utils/paths.js';
 
 export const app = express();
 

@@ -2,8 +2,8 @@
 import { StatusCodes } from 'http-status-codes';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
-import { ApiError } from '../../core/errors/ApiError';
-import { prisma } from '../../lib/prisma';
+import { ApiError } from '../../core/errors/ApiError.js';
+import { prisma } from '../../lib/prisma.js';
 
 type CreateAdminPayload = {
 	email: string;

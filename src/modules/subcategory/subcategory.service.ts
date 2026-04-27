@@ -1,11 +1,11 @@
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { StatusCodes } from 'http-status-codes';
 
-import { ApiError } from '../../core/errors/ApiError';
-import { prisma } from '../../lib/prisma';
-import { removeLocalFile } from '../../utils/file';
-import { resolveStoredRelativePath } from '../../utils/paths';
-import { createUniqueSlug } from '../../utils/slug';
+import { ApiError } from '../../core/errors/ApiError.js';
+import { prisma } from '../../lib/prisma.js';
+import { removeLocalFile } from '../../utils/file.js';
+import { resolveStoredRelativePath } from '../../utils/paths.js';
+import { createUniqueSlug } from '../../utils/slug.js';
 
 type CreateSubCategoryPayload = {
   categoryId: string;

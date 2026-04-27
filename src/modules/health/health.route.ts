@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import { sendResponse } from '../../utils/sendResponse';
+import { sendResponse } from '../../utils/sendResponse.js';
 
 export const healthRouter = Router();
 

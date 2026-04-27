@@ -6,13 +6,13 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { Prisma } from '@prisma/client';
 import { StatusCodes } from 'http-status-codes';
 
-import { ApiError } from '../../core/errors/ApiError';
-import { prisma } from '../../lib/prisma';
-import { removeLocalFile } from '../../utils/file';
-import { resolveStoredRelativePath } from '../../utils/paths';
-import { generateAndSaveBarcode } from '../../utils/barcode';
-import { freeDeliveryService } from '../freeDelivery/freeDelivery.service';
-import { CreateProductInput, UpdateProductInput } from './product.validation';
+import { ApiError } from '../../core/errors/ApiError.js';
+import { prisma } from '../../lib/prisma.js';
+import { removeLocalFile } from '../../utils/file.js';
+import { resolveStoredRelativePath } from '../../utils/paths.js';
+import { generateAndSaveBarcode } from '../../utils/barcode.js';
+import { freeDeliveryService } from '../freeDelivery/freeDelivery.service.js';
+import { CreateProductInput, UpdateProductInput } from './product.validation.js';
 
 type CreateProductVariantWithMedia = CreateProductInput['variants'][number] & {
   imageUrl: string;

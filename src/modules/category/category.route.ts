@@ -1,8 +1,8 @@
 import { Router } from 'express';
 
-import { requireAdminAuth } from '../../middlewares/requireAdminAuth';
-import { categoryImageUpload } from '../../middlewares/upload';
-import { categoryController } from './category.controller';
+import { requireAdminAuth } from '../../middlewares/requireAdminAuth.js';
+import { categoryImageUpload } from '../../middlewares/upload.js';
+import { categoryController } from './category.controller.js';
 
 export const categoryRouter = Router();
 

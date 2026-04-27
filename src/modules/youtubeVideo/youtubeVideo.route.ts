@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
-import { requireAdminAuth } from '../../middlewares/requireAdminAuth';
-import { youtubeVideoController } from './youtubeVideo.controller';
+import { requireAdminAuth } from '../../middlewares/requireAdminAuth.js';
+import { youtubeVideoController } from './youtubeVideo.controller.js';
 
 export const youtubeVideoRouter = Router();
 

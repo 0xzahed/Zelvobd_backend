@@ -1,7 +1,7 @@
 import { StatusCodes } from 'http-status-codes';
 
-import { ApiError } from '../../core/errors/ApiError';
-import { prisma } from '../../lib/prisma';
+import { ApiError } from '../../core/errors/ApiError.js';
+import { prisma } from '../../lib/prisma.js';
 
 type CreateYoutubeVideoPayload = {
   url: string;

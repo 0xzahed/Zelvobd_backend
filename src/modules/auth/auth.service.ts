@@ -3,9 +3,9 @@ import crypto from 'node:crypto';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { StatusCodes } from 'http-status-codes';
 
-import { env } from '../../config/env';
-import { ApiError } from '../../core/errors/ApiError';
-import { prisma } from '../../lib/prisma';
+import { env } from '../../config/env.js';
+import { ApiError } from '../../core/errors/ApiError.js';
+import { prisma } from '../../lib/prisma.js';
 
 type AdminLoginPayload = {
   email: string;

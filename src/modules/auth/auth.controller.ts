@@ -1,11 +1,11 @@
 // import { Request } from 'express';
 import { StatusCodes } from 'http-status-codes';
 
-import { ApiError } from '../../core/errors/ApiError';
-import { catchAsync } from '../../utils/catchAsync';
-import { sendResponse } from '../../utils/sendResponse';
-import { authService } from './auth.service';
-import { adminLoginSchema, refreshTokenSchema } from './auth.validation';
+import { ApiError } from '../../core/errors/ApiError.js';
+import { catchAsync } from '../../utils/catchAsync.js';
+import { sendResponse } from '../../utils/sendResponse.js';
+import { authService } from './auth.service.js';
+import { adminLoginSchema, refreshTokenSchema } from './auth.validation.js';
 
 const adminLogin = catchAsync(async (req, res) => {
   const parsedBody = adminLoginSchema.safeParse(req.body);

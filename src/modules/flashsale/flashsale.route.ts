@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
-import { requireAdminAuth } from '../../middlewares/requireAdminAuth';
-import { flashSaleController } from './flashsale.controller';
+import { requireAdminAuth } from '../../middlewares/requireAdminAuth.js';
+import { flashSaleController } from './flashsale.controller.js';
 
 export const flashSaleRouter = Router();
 

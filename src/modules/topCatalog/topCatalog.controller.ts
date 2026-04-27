@@ -1,14 +1,14 @@
 import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
 
-import { ApiError } from '../../core/errors/ApiError';
-import { catchAsync } from '../../utils/catchAsync';
-import { sendResponse } from '../../utils/sendResponse';
-import { topCatalogService } from './topCatalog.service';
+import { ApiError } from '../../core/errors/ApiError.js';
+import { catchAsync } from '../../utils/catchAsync.js';
+import { sendResponse } from '../../utils/sendResponse.js';
+import { topCatalogService } from './topCatalog.service.js';
 import {
   getTopCatalogProductsQuerySchema,
   replaceTopCatalogCategoriesSchema
-} from './topCatalog.validation';
+} from './topCatalog.validation.js';
 
 const getValidationErrorMessage = (error: z.ZodError): string => {
   return error.issues[0]?.message ?? 'Validation failed';

@@ -1,8 +1,8 @@
 import { FlashSaleDiscountType } from '@prisma/client';
 import { StatusCodes } from 'http-status-codes';
 
-import { ApiError } from '../../core/errors/ApiError';
-import { prisma } from '../../lib/prisma';
+import { ApiError } from '../../core/errors/ApiError.js';
+import { prisma } from '../../lib/prisma.js';
 import {
   CreateFlashSaleCampaignInput,
   GetAllActiveFlashSaleProductsQueryInput,
@@ -10,7 +10,7 @@ import {
   GetFlashSaleCampaignListQueryInput,
   UpdateFlashSaleCampaignProductsInput,
   UpdateFlashSaleCampaignTimeInput
-} from './flashsale.validation';
+} from './flashsale.validation.js';
 
 type FlashSaleCampaignStatus = 'SCHEDULED' | 'ACTIVE' | 'EXPIRED';
 

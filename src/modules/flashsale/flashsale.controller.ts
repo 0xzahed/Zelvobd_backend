@@ -2,10 +2,10 @@ import { Request } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
 
-import { ApiError } from '../../core/errors/ApiError';
-import { catchAsync } from '../../utils/catchAsync';
-import { sendResponse } from '../../utils/sendResponse';
-import { flashSaleService } from './flashsale.service';
+import { ApiError } from '../../core/errors/ApiError.js';
+import { catchAsync } from '../../utils/catchAsync.js';
+import { sendResponse } from '../../utils/sendResponse.js';
+import { flashSaleService } from './flashsale.service.js';
 import {
   createFlashSaleCampaignSchema,
   getAllActiveFlashSaleProductsQuerySchema,
@@ -13,7 +13,7 @@ import {
   getFlashSaleCampaignListQuerySchema,
   updateFlashSaleCampaignProductsSchema,
   updateFlashSaleCampaignTimeSchema
-} from './flashsale.validation';
+} from './flashsale.validation.js';
 
 const getValidationErrorMessage = (error: z.ZodError): string => {
   return error.issues[0]?.message ?? 'Validation failed';

@@ -3,11 +3,11 @@ import { Request } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import bcrypt from 'bcryptjs';
 
-import { ApiError } from '../../core/errors/ApiError';
-import { catchAsync } from '../../utils/catchAsync';
-import { sendResponse } from '../../utils/sendResponse';
-import { adminService } from './admin.service';
-import { createAdminSchema, updateAdminSchema } from './admin.validation';
+import { ApiError } from '../../core/errors/ApiError.js';
+import { catchAsync } from '../../utils/catchAsync.js';
+import { sendResponse } from '../../utils/sendResponse.js';
+import { adminService } from './admin.service.js';
+import { createAdminSchema, updateAdminSchema } from './admin.validation.js';
 
 const getAdminIdFromParams = (req: Request): string => {
 	const adminId = req.params.id;

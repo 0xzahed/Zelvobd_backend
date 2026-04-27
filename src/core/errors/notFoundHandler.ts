@@ -1,7 +1,7 @@
 import { RequestHandler } from 'express';
 import { StatusCodes } from 'http-status-codes';
 
-import { sendResponse } from '../../utils/sendResponse';
+import { sendResponse } from '../../utils/sendResponse.js';
 
 export const notFoundHandler: RequestHandler = (req, res) => {
   sendResponse(req, res, {

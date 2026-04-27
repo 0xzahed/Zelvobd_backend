@@ -1,8 +1,8 @@
 import { Router } from 'express';
 
-import { requireAdminAuth } from '../../middlewares/requireAdminAuth';
-import { subCategoryImageUpload } from '../../middlewares/upload';
-import { subCategoryController } from './subcategory.controller';
+import { requireAdminAuth } from '../../middlewares/requireAdminAuth.js';
+import { subCategoryImageUpload } from '../../middlewares/upload.js';
+import { subCategoryController } from './subcategory.controller.js';
 
 export const subCategoryRouter = Router();
 

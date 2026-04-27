@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { parseDateInBangladeshTimezone } from '../../utils/time';
+import { parseDateInBangladeshTimezone } from '../../utils/time.js';
 
 const FLASH_SALE_DISCOUNT_TYPES = ['PERCENT', 'TAKA'] as const;
 

@@ -1,15 +1,15 @@
 import { Prisma } from '@prisma/client';
 import { StatusCodes } from 'http-status-codes';
 
-import { ApiError } from '../../core/errors/ApiError';
-import { prisma } from '../../lib/prisma';
+import { ApiError } from '../../core/errors/ApiError.js';
+import { prisma } from '../../lib/prisma.js';
 import {
   GetFreeDeliveryPublicQueryInput,
   UpdateFreeDeliveryCampaignInput,
   UpdateFreeDeliveryCategorySourceInput,
   UpdateFreeDeliveryProductSourceInput,
   UpdateFreeDeliverySubCategorySourceInput
-} from './freeDelivery.validation';
+} from './freeDelivery.validation.js';
 
 const DEFAULT_FREE_DELIVERY_CAMPAIGN_KEY = 'GLOBAL';
 const DEFAULT_FREE_DELIVERY_CAMPAIGN_TITLE = 'Free Delivery Campaign';

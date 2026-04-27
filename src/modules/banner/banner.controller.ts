@@ -2,12 +2,12 @@ import { Request } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
 
-import { ApiError } from '../../core/errors/ApiError';
-import { bannerService } from './banner.service';
-import { catchAsync } from '../../utils/catchAsync';
-import { removeLocalFile } from '../../utils/file';
-import { sendResponse } from '../../utils/sendResponse';
-import { createBannerSchema, updateBannerSchema } from './banner.validation';
+import { ApiError } from '../../core/errors/ApiError.js';
+import { bannerService } from './banner.service.js';
+import { catchAsync } from '../../utils/catchAsync.js';
+import { removeLocalFile } from '../../utils/file.js';
+import { sendResponse } from '../../utils/sendResponse.js';
+import { createBannerSchema, updateBannerSchema } from './banner.validation.js';
 
 const getValidationErrorMessage = (error: z.ZodError): string => {
   return error.issues[0]?.message ?? 'Validation failed';

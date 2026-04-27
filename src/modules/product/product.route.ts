@@ -1,8 +1,8 @@
 import { Router } from 'express';
 
-import { requireAdminAuth } from '../../middlewares/requireAdminAuth';
-import { productMediaUpload } from '../../middlewares/upload';
-import { productController } from './product.controller';
+import { requireAdminAuth } from '../../middlewares/requireAdminAuth.js';
+import { productMediaUpload } from '../../middlewares/upload.js';
+import { productController } from './product.controller.js';
 
 export const productRouter = Router();
 

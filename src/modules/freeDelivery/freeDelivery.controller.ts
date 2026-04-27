@@ -1,17 +1,17 @@
 import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
 
-import { ApiError } from '../../core/errors/ApiError';
-import { catchAsync } from '../../utils/catchAsync';
-import { sendResponse } from '../../utils/sendResponse';
-import { freeDeliveryService } from './freeDelivery.service';
+import { ApiError } from '../../core/errors/ApiError.js';
+import { catchAsync } from '../../utils/catchAsync.js';
+import { sendResponse } from '../../utils/sendResponse.js';
+import { freeDeliveryService } from './freeDelivery.service.js';
 import {
   getFreeDeliveryPublicQuerySchema,
   updateFreeDeliveryCampaignSchema,
   updateFreeDeliveryCategorySourceSchema,
   updateFreeDeliveryProductSourceSchema,
   updateFreeDeliverySubCategorySourceSchema
-} from './freeDelivery.validation';
+} from './freeDelivery.validation.js';
 
 const getValidationErrorMessage = (error: z.ZodError): string => {
   return error.issues[0]?.message ?? 'Validation failed';
