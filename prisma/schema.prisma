@@ -7,19 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum ProductStatus {
-  PENDING
-  PROCESSING
-  HOLD
-  PICKUP
-  DELIVERED
-  PARTIAL
-  REJECT
-  CANCEL
-  NOT_COMPLETED
-  TRASH
-}
-
 enum FlashSaleDiscountType {
   PERCENT
   TAKA
@@ -118,7 +105,6 @@ model Product {
   stock                 Boolean       @default(true)
   availability          Boolean       @default(true)
   isFreeDelivery        Boolean       @default(false)
-  status                ProductStatus @default(PENDING)
   videoUrl              String?
   videoPath             String?
   createdAt             DateTime      @default(now())

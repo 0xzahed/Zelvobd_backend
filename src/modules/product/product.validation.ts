@@ -1,32 +1,5 @@
 import { z } from 'zod';
 
-const PRODUCT_STATUS_VALUES = [
-  'PENDING',
-  'PROCESSING',
-  'HOLD',
-  'PICKUP',
-  'DELIVERED',
-  'PARTIAL',
-  'REJECT',
-  'CANCEL',
-  'NOT_COMPLETED',
-  'TRASH'
-] as const;
-
-const productStatusInputMap: Record<string, (typeof PRODUCT_STATUS_VALUES)[number]> = {
-  pending: 'PENDING',
-  processing: 'PROCESSING',
-  hold: 'HOLD',
-  pickup: 'PICKUP',
-  delivered: 'DELIVERED',
-  partial: 'PARTIAL',
-  reject: 'REJECT',
-  cancel: 'CANCEL',
-  'not completed': 'NOT_COMPLETED',
-  not_completed: 'NOT_COMPLETED',
-  trash: 'TRASH'
-};
-
 const parseJsonFromString = (value: unknown): unknown => {
   if (typeof value !== 'string') {
     return value;
@@ -58,17 +31,6 @@ const booleanFromStringSchema = z.preprocess((value) => {
 
   return value;
 }, z.boolean());
-
-const productStatusSchema = z
-  .preprocess((value) => {
-    if (typeof value !== 'string') {
-      return value;
-    }
-
-    const normalized = value.trim().toLowerCase().replace(/_/g, ' ');
-    return productStatusInputMap[normalized] ?? value;
-  }, z.enum(PRODUCT_STATUS_VALUES))
-  .default('PENDING');
 
 const quillDeltaSchema = z
   .object({
@@ -112,7 +74,6 @@ export const createProductSchema = z
     material: z.string().trim().min(1, 'Material is required').max(120, 'Material is too long'),
     stock: booleanFromStringSchema,
     availability: booleanFromStringSchema,
-    status: productStatusSchema,
     variants: z.preprocess(
       parseJsonFromString,
       z.array(createProductVariantSchema).min(1, 'At least one product variant is required').max(50)
@@ -148,7 +109,6 @@ export const updateProductSchema = z
     material: z.string().trim().min(1, 'Material is required').max(120, 'Material is too long').optional(),
     stock: booleanFromStringSchema.optional(),
     availability: booleanFromStringSchema.optional(),
-    status: productStatusSchema.optional(),
     variants: z.preprocess(
       parseJsonFromString,
       z.array(createProductVariantSchema).min(1, 'At least one product variant is required').max(50)

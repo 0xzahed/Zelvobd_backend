@@ -36,7 +36,6 @@ const productFieldRequiredMessageMap: Record<string, string> = {
   material: 'Material is required',
   stock: 'Stock is required',
   availability: 'Availability is required',
-  status: 'Status is required',
   variants: 'At least one product variant is required'
 };
 

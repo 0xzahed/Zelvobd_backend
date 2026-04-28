@@ -54,7 +54,6 @@ const productSelect = {
   stock: true,
   availability: true,
   isFreeDelivery: true,
-  status: true,
   videoUrl: true,
   createdAt: true,
   updatedAt: true,
@@ -298,7 +297,7 @@ const createProduct = async (payload: CreateProductPayload) => {
         stock: payload.stock,
         availability: payload.availability,
         isFreeDelivery,
-        status: payload.status,
+        // status: payload.status,
         videoUrl: payload.videoUrl,
         videoPath: payload.videoPath,
         variants: {
@@ -542,7 +541,6 @@ const updateProduct = async (id: string, payload: UpdateProductPayload) => {
         ...(typeof payload.stock === 'boolean' ? { stock: payload.stock } : {}),
         ...(typeof payload.availability === 'boolean' ? { availability: payload.availability } : {}),
         isFreeDelivery: nextIsFreeDelivery,
-        ...(payload.status ? { status: payload.status } : {}),
         videoUrl: nextVideoUrl,
         videoPath: nextVideoPath,
         ...(shouldReplaceVariants
@@ -732,7 +730,6 @@ const copyProduct = async (id: string) => {
         stock: existingProduct.stock,
         availability: existingProduct.availability,
         isFreeDelivery: copiedIsFreeDelivery,
-        status: existingProduct.status,
         videoPath: copiedVideoPath,
         videoUrl: copiedVideoUrl,
         variants: {
