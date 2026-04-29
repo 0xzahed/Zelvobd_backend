@@ -92,6 +92,7 @@ model SubCategory {
 
 model Product {
   id                    String        @id @default(cuid())
+  slugId                Int           @unique @default(autoincrement())
   categoryId            String
   subCategoryId         String
   title                 String

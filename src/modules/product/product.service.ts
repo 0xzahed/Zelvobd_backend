@@ -41,6 +41,7 @@ type GetProductListParams = {
 
 const productSelect = {
   id: true,
+  slugId: true,
   categoryId: true,
   subCategoryId: true,
   title: true,
@@ -352,6 +353,8 @@ const getProductList = async (params: GetProductListParams) => {
       },
       select: {
         id: true,
+        slugId: true,
+        slug: true,
         title: true,
         descriptionHtml: true,
         weight: true,
@@ -399,6 +402,8 @@ const getProductList = async (params: GetProductListParams) => {
     },
     data: products.map((product) => ({
       id: product.id,
+      slugId: product.slugId,
+      slug: product.slug,
       title: product.title,
       descriptionHtml: product.descriptionHtml,
       weight: product.weight,
