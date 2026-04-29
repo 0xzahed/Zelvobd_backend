@@ -657,7 +657,6 @@ const copyProduct = async (id: string) => {
       material: true,
       stock: true,
       availability: true,
-      status: true,
       videoPath: true,
       variants: {
         orderBy: {
