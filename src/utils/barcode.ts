@@ -49,7 +49,7 @@ export const generateAndSaveBarcode = async (
     includetext: true,     // Show the text below bars
     textxalign: 'center',
     alttext: barcodeCode,  // Use the short code as the printed text
-    textyoffset: 2
+    textyoffset: 7         // Add 5px gap so text doesn't collapse with the bars
   });
 
   const fileName = `barcode-${variantId}-${Date.now()}.png`;
