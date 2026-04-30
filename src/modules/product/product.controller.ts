@@ -381,6 +381,22 @@ const regenerateBarcodes = catchAsync(async (req, res) => {
   });
 });
 
+const scanBarcode = catchAsync(async (req, res) => {
+  const barcode = req.params.code;
+  
+  if (typeof barcode !== 'string' || barcode.length === 0) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Barcode is required');
+  }
+
+  const result = await productService.resolveScannedBarcode(barcode);
+
+  sendResponse(req, res, {
+    statusCode: StatusCodes.OK,
+    message: 'Barcode scanned successfully',
+    data: result
+  });
+});
+
 export const productController = {
   createProduct,
   getProductList,
@@ -388,5 +404,7 @@ export const productController = {
   updateProduct,
   deleteProduct,
   copyProduct,
-  regenerateBarcodes
+  regenerateBarcodes,
+  scanBarcode
 };
+

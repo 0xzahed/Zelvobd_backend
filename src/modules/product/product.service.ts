@@ -222,6 +222,7 @@ const fetchProductSlugInfo = async (productId: string) => {
     where: { id: productId },
     select: {
       id: true,
+      slugId: true,
       title: true,
       slug: true,
       category: { select: { slug: true } },
@@ -258,10 +259,8 @@ const generateBarcodesForProduct = async (productId: string): Promise<void> => {
       const { barcodeUrl, barcodePath } = await generateAndSaveBarcode({
         variantId: variant.id,
         productTitle: product.title,
-        variantColor: variant.color,
-        productSlug: product.slug,
-        categorySlug,
-        subCategorySlug
+        productSlugId: product.slugId,
+        variantColor: variant.color
       });
 
       await prisma.productVariant.update({
@@ -780,6 +779,65 @@ const regenerateProductBarcodes = async (id: string) => {
   });
 };
 
+/**
+ * Resolves a scanned barcode string (e.g. P-2026-12-Red) into its frontend redirect URL.
+ */
+const resolveScannedBarcode = async (barcode: string) => {
+  // Format: P-2026-{slugId}-{colorWithHyphens}
+  if (!barcode.startsWith('P-2026-')) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid barcode format');
+  }
+
+  const parts = barcode.substring(7).split('-');
+  if (parts.length < 2) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid barcode format');
+  }
+
+  const slugIdStr = parts[0];
+  const slugId = parseInt(slugIdStr, 10);
+  if (isNaN(slugId)) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid product ID in barcode');
+  }
+
+  const colorPart = parts.slice(1).join('-'); // Re-join rest of parts as color
+
+  const product = await prisma.product.findUnique({
+    where: { slugId },
+    select: {
+      slug: true,
+      category: { select: { slug: true } },
+      subCategory: { select: { slug: true } },
+      variants: {
+        select: {
+          id: true,
+          color: true
+        }
+      }
+    }
+  });
+
+  if (!product) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Product not found');
+  }
+
+  // Find variant where color (spaces replaced by hyphens) matches the barcode color
+  const variant = product.variants.find((v) => {
+    const formattedColor = v.color.trim().replace(/\s+/g, '-');
+    return formattedColor === colorPart;
+  });
+
+  if (!variant) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Variant not found for this product');
+  }
+
+  const categorySlug = product.category?.slug || 'unknown';
+  const subCategorySlug = product.subCategory?.slug || 'unknown';
+
+  return {
+    redirectUrl: `/${categorySlug}/${subCategorySlug}/${product.slug}/${variant.id}`
+  };
+};
+
 export const productService = {
   createProduct,
   getProductList,
@@ -787,5 +845,6 @@ export const productService = {
   updateProduct,
   deleteProduct,
   copyProduct,
-  regenerateProductBarcodes
+  regenerateProductBarcodes,
+  resolveScannedBarcode
 };

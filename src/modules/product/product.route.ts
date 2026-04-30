@@ -7,6 +7,7 @@ import { productController } from './product.controller.js';
 export const productRouter = Router();
 
 productRouter.get('/', productController.getProductList);
+productRouter.get('/scan/:code', productController.scanBarcode);
 productRouter.get('/:id', productController.getSingleProduct);
 
 productRouter.use(requireAdminAuth);

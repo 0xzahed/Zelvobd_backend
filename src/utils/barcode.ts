@@ -1,9 +1,6 @@
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
-
 import bwipjs from 'bwip-js';
-
-import { env } from '../config/env.js';
 import { uploadRootPath } from './paths.js';
 
 const barcodesDirectoryPath = path.join(uploadRootPath, 'products', 'barcodes');
@@ -17,10 +14,8 @@ export const ensureBarcodesDirectoryExists = (): void => {
 type GenerateBarcodeParams = {
   variantId: string;
   productTitle: string;
+  productSlugId: number;
   variantColor: string;
-  productSlug: string;
-  categorySlug: string;
-  subCategorySlug: string;
 };
 
 type GenerateBarcodeResult = {
@@ -29,43 +24,31 @@ type GenerateBarcodeResult = {
 };
 
 /**
- * Builds the full frontend URL that will be encoded inside the barcode.
- * When scanned, the user is taken directly to this variant's detail page.
- */
-const buildVariantFrontendUrl = (params: Omit<GenerateBarcodeParams, 'productTitle' | 'variantColor'>): string => {
-  const { categorySlug, subCategorySlug, productSlug, variantId } = params;
-  const base = env.frontendBaseUrl.replace(/\/+$/, '');
-  return `${base}/${categorySlug}/${subCategorySlug}/${productSlug}/${variantId}`;
-};
-
-/**
  * Generates a Code128 barcode PNG for a product variant and saves it to disk.
  *
- * The barcode encodes the full frontend variant URL so that scanning it
- * redirects the user to the correct product + pre-selected variant.
- *
- * The label displayed below the barcode bars is: "ProductTitle - VariantColor"
+ * The barcode encodes a short string format: P-2026-{productSlugId}-{variantColor}
+ * (spaces in variant color are replaced with hyphens).
  */
 export const generateAndSaveBarcode = async (
   params: GenerateBarcodeParams
 ): Promise<GenerateBarcodeResult> => {
-  const { variantId, productTitle, variantColor } = params;
+  const { variantId, productSlugId, variantColor } = params;
 
   // Ensure directory exists (synchronously so the file write never fails)
   await fs.mkdir(barcodesDirectoryPath, { recursive: true });
 
-  const variantUrl = buildVariantFrontendUrl(params);
-  const label = `${productTitle} - ${variantColor}`;
+  const formattedColor = variantColor.trim().replace(/\s+/g, '-');
+  const barcodeCode = `P-2026-${productSlugId}-${formattedColor}`;
 
   // Render the barcode to a PNG buffer using bwip-js
   const pngBuffer = await bwipjs.toBuffer({
     bcid: 'code128',       // Code128 — universally readable by all scanners
-    text: variantUrl,      // Value encoded in the barcode (the full variant URL)
+    text: barcodeCode,     // Value encoded in the barcode
     scale: 3,              // 3x scale for clear printing
     height: 15,            // Bar height in mm
-    includetext: true,     // Show the URL text below bars (small)
+    includetext: true,     // Show the text below bars
     textxalign: 'center',
-    alttext: label,        // This overrides the printed text with our human-readable label
+    alttext: barcodeCode,  // Use the short code as the printed text
     textyoffset: 2
   });
 
