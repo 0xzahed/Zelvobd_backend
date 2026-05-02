@@ -8,7 +8,6 @@ const productIdSchema = z.string().trim().min(1, 'Valid product id is required')
 
 const productIdsSchema = z
   .array(productIdSchema)
-  .min(1, 'At least one product is required')
   .max(500, 'Too many products in one request');
 
 const bangladeshDateTimeSchema = z.preprocess(
@@ -23,7 +22,7 @@ export const createFlashSaleCampaignSchema = z
     endAt: bangladeshDateTimeSchema,
     discountType: z.enum(FLASH_SALE_DISCOUNT_TYPES),
     discountValue: z.coerce.number().positive('Discount value must be greater than 0'),
-    productIds: productIdsSchema
+    productIds: productIdsSchema.optional().default([])
   })
   .superRefine((value, context) => {
     if (value.endAt <= value.startAt) {

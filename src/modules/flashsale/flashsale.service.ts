@@ -162,7 +162,7 @@ const ensureProductsExist = async (productIds: string[]): Promise<string[]> => {
   const uniqueProductIds = deduplicateProductIds(productIds);
 
   if (uniqueProductIds.length === 0) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'At least one product is required');
+    return [];
   }
 
   const existingProducts = await prisma.product.findMany({
