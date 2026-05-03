@@ -14,6 +14,70 @@ import { generateAndSaveBarcode } from '../../utils/barcode.js';
 import { freeDeliveryService } from '../freeDelivery/freeDelivery.service.js';
 import { CreateProductInput, UpdateProductInput } from './product.validation.js';
 
+const roundToTwoDecimals = (value: number): number => {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+};
+
+const calculateFlashSalePrice = (
+  discountedPrice: number,
+  discountType: string,
+  discountValue: number
+): number => {
+  if (discountType === 'PERCENT') {
+    const nextPrice = discountedPrice - (discountedPrice * discountValue) / 100;
+    return roundToTwoDecimals(Math.max(nextPrice, 0));
+  }
+  const nextPrice = discountedPrice - discountValue;
+  return roundToTwoDecimals(Math.max(nextPrice, 0));
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const mapProductWithFlashSale = (product: any) => {
+  if (!product) return product;
+
+  let isFlashSale = false;
+  let flashSaleEndsAt = null;
+  let activeCampaign = null;
+
+  if (product.flashSaleItems && product.flashSaleItems.length > 0) {
+    activeCampaign = product.flashSaleItems[0].flashSaleCampaign;
+    isFlashSale = true;
+    flashSaleEndsAt = activeCampaign.endAt;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mappedVariants = product.variants ? product.variants.map((variant: any) => {
+    const actualPrice = Number(variant.actualPrice);
+    const discountedPrice = Number(variant.discountedPrice);
+    
+    let flashSalePrice = undefined;
+    if (isFlashSale && activeCampaign) {
+       flashSalePrice = calculateFlashSalePrice(
+         discountedPrice,
+         activeCampaign.discountType,
+         Number(activeCampaign.discountValue)
+       );
+    }
+
+    return {
+      ...variant,
+      actualPrice,
+      discountedPrice,
+      flashSalePrice
+    };
+  }) : [];
+
+  const { flashSaleItems: _flashSaleItems, ...rest } = product;
+
+  return {
+    ...rest,
+    isFlashSale,
+    flashSaleEndsAt,
+    variants: mappedVariants,
+    firstVariant: mappedVariants[0] ?? null
+  };
+};
+
 type CreateProductVariantWithMedia = CreateProductInput['variants'][number] & {
   imageUrl: string;
   imagePath: string;
@@ -39,7 +103,7 @@ type GetProductListParams = {
   subCategoryId?: string;
 };
 
-const productSelect = {
+const getProductSelect = (now: Date = new Date()) => ({
   id: true,
   slugId: true,
   categoryId: true,
@@ -87,8 +151,26 @@ const productSelect = {
       createdAt: true,
       updatedAt: true
     }
+  },
+  flashSaleItems: {
+    where: {
+      flashSaleCampaign: {
+        startAt: { lte: now },
+        endAt: { gt: now }
+      }
+    },
+    select: {
+      flashSaleCampaign: {
+        select: {
+          id: true,
+          discountType: true,
+          discountValue: true,
+          endAt: true
+        }
+      }
+    }
   }
-} as const;
+});
 
 const generateSlug = (title: string): string => {
   const baseSlug = title
@@ -311,7 +393,7 @@ const createProduct = async (payload: CreateProductPayload) => {
           }))
         }
       },
-      select: productSelect
+      select: getProductSelect(new Date())
     });
 
     // Generate barcodes asynchronously after product + variants exist in DB
@@ -319,7 +401,7 @@ const createProduct = async (payload: CreateProductPayload) => {
       console.error(`[Barcode] Failed to generate barcodes for product ${product.id}:`, err);
     });
 
-    return product;
+    return mapProductWithFlashSale(product);
   } catch (error) {
     normalizePrismaError(error);
   }
@@ -341,6 +423,8 @@ const getProductList = async (params: GetProductListParams) => {
     ...(categoryId ? { categoryId } : {}),
     ...(subCategoryId ? { subCategoryId } : {})
   };
+
+  const now = new Date();
 
   const [products, total] = await prisma.$transaction([
     prisma.product.findMany({
@@ -386,6 +470,24 @@ const getProductList = async (params: GetProductListParams) => {
             imageUrl: true,
             barcodeUrl: true
           }
+        },
+        flashSaleItems: {
+          where: {
+            flashSaleCampaign: {
+              startAt: { lte: now },
+              endAt: { gt: now }
+            }
+          },
+          select: {
+            flashSaleCampaign: {
+              select: {
+                id: true,
+                discountType: true,
+                discountValue: true,
+                endAt: true
+              }
+            }
+          }
         }
       }
     }),
@@ -399,29 +501,14 @@ const getProductList = async (params: GetProductListParams) => {
       total,
       totalPage: total === 0 ? 0 : Math.ceil(total / limit)
     },
-    data: products.map((product) => ({
-      id: product.id,
-      slugId: product.slugId,
-      slug: product.slug,
-      title: product.title,
-      descriptionHtml: product.descriptionHtml,
-      weight: product.weight,
-      material: product.material,
-      stock: product.stock,
-      availability: product.availability,
-      isFreeDelivery: product.isFreeDelivery,
-      category: product.category,
-      subCategory: product.subCategory,
-      variants: product.variants,
-      firstVariant: product.variants[0] ?? null
-    }))
+    data: products.map((product) => mapProductWithFlashSale(product))
   };
 };
 
 const getSingleProduct = async (id: string) => {
   const product = await prisma.product.findUnique({
     where: { id },
-    select: productSelect
+    select: getProductSelect(new Date())
   });
 
   if (!product) {
@@ -563,7 +650,7 @@ const updateProduct = async (id: string, payload: UpdateProductPayload) => {
             }
           : {})
       },
-      select: productSelect
+      select: getProductSelect(new Date())
     });
 
     const oldFilePaths: string[] = [...uploadedFilesToDelete];
@@ -739,7 +826,7 @@ const copyProduct = async (id: string) => {
           create: copiedVariants
         }
       },
-      select: productSelect
+      select: getProductSelect(new Date())
     });
 
     // Generate fresh barcodes for the copied product (new slug = different URLs)
@@ -775,7 +862,7 @@ const regenerateProductBarcodes = async (id: string) => {
 
   return prisma.product.findUnique({
     where: { id },
-    select: productSelect
+    select: getProductSelect(new Date())
   });
 };
 
