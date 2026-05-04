@@ -515,7 +515,20 @@ const getSingleProduct = async (id: string) => {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Product not found');
   }
 
-  return product;
+  return mapProductWithFlashSale(product);
+};
+
+const getProductBySlug = async (slug: string) => {
+  const product = await prisma.product.findUnique({
+    where: { slug },
+    select: getProductSelect(new Date())
+  });
+
+  if (!product) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Product not found');
+  }
+
+  return mapProductWithFlashSale(product);
 };
 
 const updateProduct = async (id: string, payload: UpdateProductPayload) => {
@@ -929,9 +942,11 @@ export const productService = {
   createProduct,
   getProductList,
   getSingleProduct,
+  getProductBySlug,
   updateProduct,
   deleteProduct,
   copyProduct,
   regenerateProductBarcodes,
   resolveScannedBarcode
 };
+

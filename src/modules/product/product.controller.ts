@@ -335,6 +335,21 @@ const getSingleProduct = catchAsync(async (req, res) => {
   });
 });
 
+const getProductBySlug = catchAsync(async (req, res) => {
+  const { slug } = req.params;
+  if (!slug || typeof slug !== 'string') {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Product slug is required');
+  }
+  
+  const product = await productService.getProductBySlug(slug);
+
+  sendResponse(req, res, {
+    statusCode: StatusCodes.OK,
+    message: 'Product fetched successfully',
+    data: product
+  });
+});
+
 const updateProduct = catchAsync(
   async (req, res) => {
     const { payload } = validateAndBuildUpdateProductPayload(req);
@@ -401,10 +416,10 @@ export const productController = {
   createProduct,
   getProductList,
   getSingleProduct,
+  getProductBySlug,
   updateProduct,
   deleteProduct,
   copyProduct,
   regenerateBarcodes,
   scanBarcode
 };
-

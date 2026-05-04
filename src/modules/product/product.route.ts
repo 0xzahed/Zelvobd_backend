@@ -8,6 +8,7 @@ export const productRouter = Router();
 
 productRouter.get('/', productController.getProductList);
 productRouter.get('/scan/:code', productController.scanBarcode);
+productRouter.get('/slug/:slug', productController.getProductBySlug);
 productRouter.get('/:id', productController.getSingleProduct);
 
 productRouter.use(requireAdminAuth);
