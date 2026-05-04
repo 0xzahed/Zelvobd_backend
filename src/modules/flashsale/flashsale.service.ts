@@ -292,13 +292,15 @@ const flashSaleProductListSelect = {
   category: {
     select: {
       id: true,
-      title: true
+      title: true,
+      slug: true
     }
   },
   subCategory: {
     select: {
       id: true,
-      title: true
+      title: true,
+      slug: true
     }
   },
   variants: {
