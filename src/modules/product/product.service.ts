@@ -12,6 +12,7 @@ import { removeLocalFile } from '../../utils/file.js';
 import { resolveStoredRelativePath } from '../../utils/paths.js';
 import { generateAndSaveBarcode } from '../../utils/barcode.js';
 import { freeDeliveryService } from '../freeDelivery/freeDelivery.service.js';
+import { trendingService } from '../trending/trending.service.js';
 import { CreateProductInput, UpdateProductInput } from './product.validation.js';
 
 const roundToTwoDecimals = (value: number): number => {
@@ -119,6 +120,7 @@ const getProductSelect = (now: Date = new Date()) => ({
   stock: true,
   availability: true,
   isFreeDelivery: true,
+  isTrending: true,
   videoUrl: true,
   createdAt: true,
   updatedAt: true,
@@ -361,6 +363,10 @@ const createProduct = async (payload: CreateProductPayload) => {
       categoryId: payload.categoryId,
       subCategoryId: payload.subCategoryId
     });
+    const isTrending = await trendingService.resolveTrendingForProduct({
+      categoryId: payload.categoryId,
+      subCategoryId: payload.subCategoryId
+    });
 
     const extraDescriptionDelta = payload.extraDescriptionDelta as Prisma.InputJsonValue | undefined;
 
@@ -379,6 +385,7 @@ const createProduct = async (payload: CreateProductPayload) => {
         stock: payload.stock,
         availability: payload.availability,
         isFreeDelivery,
+        isTrending,
         // status: payload.status,
         videoUrl: payload.videoUrl,
         videoPath: payload.videoPath,
@@ -445,6 +452,7 @@ const getProductList = async (params: GetProductListParams) => {
         stock: true,
         availability: true,
         isFreeDelivery: true,
+        isTrending: true,
         category: {
           select: {
             id: true,
@@ -570,6 +578,11 @@ const updateProduct = async (id: string, payload: UpdateProductPayload) => {
       categoryId: nextCategoryId,
       subCategoryId: nextSubCategoryId
     });
+    const nextIsTrending = await trendingService.resolveTrendingForProduct({
+      productId: existingProduct.id,
+      categoryId: nextCategoryId,
+      subCategoryId: nextSubCategoryId
+    });
 
     const extraDescriptionDelta = payload.extraDescriptionDelta as Prisma.InputJsonValue | undefined;
     const nextVariantsFromPayload = payload.variants;
@@ -645,6 +658,7 @@ const updateProduct = async (id: string, payload: UpdateProductPayload) => {
         ...(typeof payload.stock === 'boolean' ? { stock: payload.stock } : {}),
         ...(typeof payload.availability === 'boolean' ? { availability: payload.availability } : {}),
         isFreeDelivery: nextIsFreeDelivery,
+        isTrending: nextIsTrending,
         videoUrl: nextVideoUrl,
         videoPath: nextVideoPath,
         ...(shouldReplaceVariants
@@ -788,6 +802,10 @@ const copyProduct = async (id: string) => {
       categoryId: existingProduct.categoryId,
       subCategoryId: existingProduct.subCategoryId
     });
+    const copiedIsTrending = await trendingService.resolveTrendingForProduct({
+      categoryId: existingProduct.categoryId,
+      subCategoryId: existingProduct.subCategoryId
+    });
 
     const copiedVariants = await Promise.all(
       existingProduct.variants.map(async (variant) => {
@@ -833,6 +851,7 @@ const copyProduct = async (id: string) => {
         stock: existingProduct.stock,
         availability: existingProduct.availability,
         isFreeDelivery: copiedIsFreeDelivery,
+        isTrending: copiedIsTrending,
         videoPath: copiedVideoPath,
         videoUrl: copiedVideoUrl,
         variants: {

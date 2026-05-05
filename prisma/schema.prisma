@@ -54,6 +54,7 @@ model Category {
   banners                   Banner[]
   freeDeliveryCampaignItems FreeDeliveryCampaignCategory[]
   topCatalogItems           TopCatalogCategory[]
+  trendingCampaignItems     TrendingCampaignCategory[]
   createdAt                 DateTime                       @default(now())
   updatedAt                 DateTime                       @updatedAt
 
@@ -81,6 +82,7 @@ model SubCategory {
   imagePath                 String
   products                  Product[]
   freeDeliveryCampaignItems FreeDeliveryCampaignSubCategory[]
+  trendingCampaignItems     TrendingCampaignSubCategory[]
   createdAt                 DateTime                          @default(now())
   updatedAt                 DateTime                          @updatedAt
 
@@ -91,25 +93,26 @@ model SubCategory {
 }
 
 model Product {
-  id                    String        @id @default(cuid())
-  slugId                Int           @unique @default(autoincrement())
+  id                    String   @id @default(cuid())
+  slugId                Int      @unique @default(autoincrement())
   categoryId            String
   subCategoryId         String
   title                 String
-  slug                  String        @unique
+  slug                  String   @unique
   descriptionDelta      Json
   descriptionHtml       String
   extraDescriptionDelta Json?
   extraDescriptionHtml  String?
   weight                String
   material              String
-  stock                 Boolean       @default(true)
-  availability          Boolean       @default(true)
-  isFreeDelivery        Boolean       @default(false)
+  stock                 Boolean  @default(true)
+  availability          Boolean  @default(true)
+  isFreeDelivery        Boolean  @default(false)
+  isTrending            Boolean  @default(false)
   videoUrl              String?
   videoPath             String?
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   category                  Category                              @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   subCategory               SubCategory                           @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
@@ -117,10 +120,13 @@ model Product {
   flashSaleItems            FlashSaleProduct[]
   freeDeliveryCampaignItems FreeDeliveryCampaignProduct[]
   freeDeliveryExclusions    FreeDeliveryCampaignExcludedProduct[]
+  trendingCampaignItems     TrendingCampaignProduct[]
+  trendingExclusions        TrendingCampaignExcludedProduct[]
 
   @@index([categoryId])
   @@index([subCategoryId])
   @@index([isFreeDelivery])
+  @@index([isTrending])
   @@map("products")
 }
 
@@ -280,4 +286,83 @@ model FlashSaleProduct {
   @@index([flashSaleCampaignId])
   @@index([productId])
   @@map("flash_sale_products")
+}
+
+model TrendingCampaign {
+  id               String                            @id @default(cuid())
+  singletonKey     String                            @unique @default("GLOBAL")
+  title            String
+  isActive         Boolean                           @default(true)
+  categories       TrendingCampaignCategory[]
+  subCategories    TrendingCampaignSubCategory[]
+  products         TrendingCampaignProduct[]
+  excludedProducts TrendingCampaignExcludedProduct[]
+  createdAt        DateTime                          @default(now())
+  updatedAt        DateTime                          @updatedAt
+
+  @@map("trending_campaigns")
+}
+
+model TrendingCampaignCategory {
+  id                 String   @id @default(cuid())
+  trendingCampaignId String
+  categoryId         String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  trendingCampaign TrendingCampaign @relation(fields: [trendingCampaignId], references: [id], onDelete: Cascade)
+  category         Category         @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([trendingCampaignId, categoryId])
+  @@index([trendingCampaignId])
+  @@index([categoryId])
+  @@map("trending_campaign_categories")
+}
+
+model TrendingCampaignSubCategory {
+  id                 String   @id @default(cuid())
+  trendingCampaignId String
+  subCategoryId      String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  trendingCampaign TrendingCampaign @relation(fields: [trendingCampaignId], references: [id], onDelete: Cascade)
+  subCategory      SubCategory      @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([trendingCampaignId, subCategoryId])
+  @@index([trendingCampaignId])
+  @@index([subCategoryId])
+  @@map("trending_campaign_sub_categories")
+}
+
+model TrendingCampaignProduct {
+  id                 String   @id @default(cuid())
+  trendingCampaignId String
+  productId          String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  trendingCampaign TrendingCampaign @relation(fields: [trendingCampaignId], references: [id], onDelete: Cascade)
+  product          Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([trendingCampaignId, productId])
+  @@index([trendingCampaignId])
+  @@index([productId])
+  @@map("trending_campaign_products")
+}
+
+model TrendingCampaignExcludedProduct {
+  id                 String   @id @default(cuid())
+  trendingCampaignId String
+  productId          String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  trendingCampaign TrendingCampaign @relation(fields: [trendingCampaignId], references: [id], onDelete: Cascade)
+  product          Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([trendingCampaignId, productId])
+  @@index([trendingCampaignId])
+  @@index([productId])
+  @@map("trending_campaign_excluded_products")
 }
