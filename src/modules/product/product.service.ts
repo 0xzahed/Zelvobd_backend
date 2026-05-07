@@ -355,6 +355,28 @@ const generateBarcodesForProduct = async (productId: string): Promise<void> => {
   );
 };
 
+const extractEmbeddedUploadPaths = (html: string | null | undefined): string[] => {
+  if (!html) return [];
+  const paths: string[] = [];
+  const regex = /<img[^>]+src="([^">]+)"/g;
+  let match;
+  while ((match = regex.exec(html)) !== null) {
+    const src = match[1];
+    if (src && src.includes('/upload/richText/')) {
+      try {
+        const urlObj = new URL(src, 'http://localhost');
+        const pathname = urlObj.pathname;
+        if (pathname.startsWith('/upload/')) {
+          paths.push(pathname.substring(1));
+        }
+      } catch (e) {
+        console.log(`Failed to parse URL from img src: ${src}`, e);
+      }
+    }
+  }
+  return paths;
+};
+
 const createProduct = async (payload: CreateProductPayload) => {
   await ensureCategoryAndSubCategoryRelation(payload.categoryId, payload.subCategoryId);
 
@@ -547,6 +569,8 @@ const updateProduct = async (id: string, payload: UpdateProductPayload) => {
       title: true,
       categoryId: true,
       subCategoryId: true,
+      descriptionHtml: true,
+      extraDescriptionHtml: true,
       videoPath: true,
       videoUrl: true,
       variants: {
@@ -704,6 +728,22 @@ const updateProduct = async (id: string, payload: UpdateProductPayload) => {
       oldFilePaths.push(existingProduct.videoPath);
     }
 
+    // Diff embedded images to find orphaned ones
+    const oldEmbeddedImages = new Set([
+      ...extractEmbeddedUploadPaths(existingProduct.descriptionHtml),
+      ...extractEmbeddedUploadPaths(existingProduct.extraDescriptionHtml)
+    ]);
+    const newEmbeddedImages = new Set([
+      ...extractEmbeddedUploadPaths(updatedProduct.descriptionHtml),
+      ...extractEmbeddedUploadPaths(updatedProduct.extraDescriptionHtml)
+    ]);
+    
+    oldEmbeddedImages.forEach((imagePath) => {
+      if (!newEmbeddedImages.has(imagePath)) {
+        oldFilePaths.push(imagePath);
+      }
+    });
+
     await Promise.all(
       Array.from(new Set(oldFilePaths)).map((filePath) =>
         removeLocalFile(resolveStoredRelativePath(filePath))
@@ -729,6 +769,8 @@ const deleteProduct = async (id: string) => {
     where: { id },
     select: {
       id: true,
+      descriptionHtml: true,
+      extraDescriptionHtml: true,
       videoPath: true,
       variants: {
         select: {
@@ -747,12 +789,18 @@ const deleteProduct = async (id: string) => {
     where: { id }
   });
 
+  const embeddedImages = [
+    ...extractEmbeddedUploadPaths(existingProduct.descriptionHtml),
+    ...extractEmbeddedUploadPaths(existingProduct.extraDescriptionHtml)
+  ];
+
   const filePathsToDelete = [
     ...existingProduct.variants.map((variant) => variant.imagePath),
     ...existingProduct.variants
       .filter((variant) => variant.barcodePath)
       .map((variant) => variant.barcodePath as string),
-    ...(existingProduct.videoPath ? [existingProduct.videoPath] : [])
+    ...(existingProduct.videoPath ? [existingProduct.videoPath] : []),
+    ...embeddedImages
   ];
 
   await Promise.all(
