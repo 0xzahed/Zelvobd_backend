@@ -68,13 +68,12 @@ export const mapProductWithFlashSale = (product: any) => {
     };
   }) : [];
 
-  const { flashSaleItems: _flashSaleItems, ...rest } = product;
+  const { flashSaleItems: _flashSaleItems, variants: _variants, ...rest } = product;
 
   return {
     ...rest,
     isFlashSale,
     flashSaleEndsAt,
-    variants: mappedVariants,
     firstVariant: mappedVariants[0] ?? null
   };
 };
