@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes';
 
 import { ApiError } from '../../core/errors/ApiError.js';
 import { prisma } from '../../lib/prisma.js';
+import { getProductCardSelect } from '../product/product.service.js';
 import {
   GetFreeDeliveryPublicQueryInput,
   UpdateFreeDeliveryCampaignInput,
@@ -575,6 +576,8 @@ const getFreeDelivery = async (params: GetFreeDeliveryPublicQueryInput) => {
       ...(subCategoryId ? { subCategoryId } : {})
     };
 
+    const now = new Date();
+
     const [products, total, campaignSummary] = await Promise.all([
       tx.product.findMany({
         where: whereClause,
@@ -583,39 +586,7 @@ const getFreeDelivery = async (params: GetFreeDeliveryPublicQueryInput) => {
         orderBy: {
           createdAt: 'desc'
         },
-        select: {
-          id: true,
-          title: true,
-          slug: true,
-          stock: true,
-          availability: true,
-          isFreeDelivery: true,
-          category: {
-            select: {
-              id: true,
-              title: true
-            }
-          },
-          subCategory: {
-            select: {
-              id: true,
-              title: true
-            }
-          },
-          variants: {
-            take: 1,
-            orderBy: {
-              createdAt: 'asc'
-            },
-            select: {
-              actualPrice: true,
-              discountedPrice: true,
-              color: true,
-              size: true,
-              imageUrl: true
-            }
-          }
-        }
+        select: getProductCardSelect(now)
       }),
       tx.product.count({ where: whereClause }),
       getCampaignSummaryTx(tx, campaign.id)

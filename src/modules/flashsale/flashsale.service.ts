@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes';
 
 import { ApiError } from '../../core/errors/ApiError.js';
 import { prisma } from '../../lib/prisma.js';
+import { getProductCardSelect } from '../product/product.service.js';
 import {
   CreateFlashSaleCampaignInput,
   GetAllActiveFlashSaleProductsQueryInput,
@@ -281,43 +282,6 @@ const getActiveFlashSaleCampaignSummaries = async (now: Date = new Date()) => {
   });
 };
 
-const flashSaleProductListSelect = {
-  id: true,
-  title: true,
-  slug: true,
-  stock: true,
-  availability: true,
-  isFreeDelivery: true,
-  videoUrl: true,
-  category: {
-    select: {
-      id: true,
-      title: true,
-      slug: true
-    }
-  },
-  subCategory: {
-    select: {
-      id: true,
-      title: true,
-      slug: true
-    }
-  },
-  variants: {
-    orderBy: {
-      createdAt: 'asc' as const
-    },
-    select: {
-      id: true,
-      actualPrice: true,
-      discountedPrice: true,
-      color: true,
-      size: true,
-      imageUrl: true
-    }
-  }
-} as const;
-
 const createFlashSaleCampaign = async (payload: CreateFlashSaleCampaignInput) => {
   if (payload.endAt <= payload.startAt) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'End time must be greater than start time');
@@ -560,7 +524,7 @@ const getActiveFlashSaleProducts = async (params: GetActiveFlashSaleProductsQuer
       orderBy: {
         createdAt: 'desc'
       },
-      select: flashSaleProductListSelect
+      select: getProductCardSelect(now)
     }),
     prisma.product.count({ where: whereClause })
   ]);
@@ -652,7 +616,7 @@ const getAllActiveFlashSaleProducts = async (params: GetAllActiveFlashSaleProduc
       orderBy: {
         createdAt: 'desc'
       },
-      select: flashSaleProductListSelect
+      select: getProductCardSelect(now)
     }),
     prisma.product.count({ where: whereClause })
   ]);

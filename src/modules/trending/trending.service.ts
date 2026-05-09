@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes';
 
 import { ApiError } from '../../core/errors/ApiError.js';
 import { prisma } from '../../lib/prisma.js';
+import { getProductCardSelect, mapProductWithFlashSale } from '../product/product.service.js';
 import {
   GetTrendingPublicQueryInput,
   UpdateTrendingCampaignInput,
@@ -575,6 +576,8 @@ const getTrending = async (params: GetTrendingPublicQueryInput) => {
       ...(subCategoryId ? { subCategoryId } : {})
     };
 
+    const now = new Date();
+
     const [products, total, campaignSummary] = await Promise.all([
       tx.product.findMany({
         where: whereClause,
@@ -583,39 +586,7 @@ const getTrending = async (params: GetTrendingPublicQueryInput) => {
         orderBy: {
           createdAt: 'desc'
         },
-        select: {
-          id: true,
-          title: true,
-          slug: true,
-          stock: true,
-          availability: true,
-          isTrending: true,
-          category: {
-            select: {
-              id: true,
-              title: true
-            }
-          },
-          subCategory: {
-            select: {
-              id: true,
-              title: true
-            }
-          },
-          variants: {
-            take: 1,
-            orderBy: {
-              createdAt: 'asc'
-            },
-            select: {
-              actualPrice: true,
-              discountedPrice: true,
-              color: true,
-              size: true,
-              imageUrl: true
-            }
-          }
-        }
+        select: getProductCardSelect(now)
       }),
       tx.product.count({ where: whereClause }),
       getCampaignSummaryTx(tx, campaign.id)
@@ -629,17 +600,7 @@ const getTrending = async (params: GetTrendingPublicQueryInput) => {
         total,
         totalPage: total === 0 ? 0 : Math.ceil(total / limit)
       },
-      data: products.map((product) => ({
-        id: product.id,
-        title: product.title,
-        slug: product.slug,
-        stock: product.stock,
-        availability: product.availability,
-        isTrending: product.isTrending,
-        category: product.category,
-        subCategory: product.subCategory,
-        firstVariant: product.variants[0] ?? null
-      }))
+      data: products.map((product) => mapProductWithFlashSale(product))
     };
   });
 };

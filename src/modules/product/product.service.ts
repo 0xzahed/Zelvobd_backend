@@ -174,6 +174,64 @@ const getProductSelect = (now: Date = new Date()) => ({
   }
 });
 
+export const getProductCardSelect = (now: Date = new Date()) => ({
+  id: true,
+  slugId: true,
+  slug: true,
+  title: true,
+  stock: true,
+  availability: true,
+  isFreeDelivery: true,
+  isTrending: true,
+  createdAt: true,
+  category: {
+    select: {
+      id: true,
+      title: true,
+      slug: true
+    }
+  },
+  subCategory: {
+    select: {
+      id: true,
+      title: true,
+      slug: true
+    }
+  },
+  variants: {
+    orderBy: {
+      createdAt: 'asc' as const
+    },
+    take: 1,
+    select: {
+      id: true,
+      actualPrice: true,
+      discountedPrice: true,
+      imageUrl: true,
+      imagePath: true,
+      createdAt: true
+    }
+  },
+  flashSaleItems: {
+    where: {
+      flashSaleCampaign: {
+        startAt: { lte: now },
+        endAt: { gt: now }
+      }
+    },
+    select: {
+      flashSaleCampaign: {
+        select: {
+          id: true,
+          discountType: true,
+          discountValue: true,
+          endAt: true
+        }
+      }
+    }
+  }
+});
+
 const generateSlug = (title: string): string => {
   const baseSlug = title
     .toLocaleLowerCase()
@@ -463,63 +521,7 @@ const getProductList = async (params: GetProductListParams) => {
       orderBy: {
         createdAt: 'desc'
       },
-      select: {
-        id: true,
-        slugId: true,
-        slug: true,
-        title: true,
-        descriptionHtml: true,
-        weight: true,
-        material: true,
-        stock: true,
-        availability: true,
-        isFreeDelivery: true,
-        isTrending: true,
-        category: {
-          select: {
-            id: true,
-            title: true
-          }
-        },
-        subCategory: {
-          select: {
-            id: true,
-            title: true
-          }
-        },
-        variants: {
-          orderBy: {
-            createdAt: 'asc'
-          },
-          select: {
-            id: true,
-            actualPrice: true,
-            discountedPrice: true,
-            color: true,
-            size: true,
-            imageUrl: true,
-            barcodeUrl: true
-          }
-        },
-        flashSaleItems: {
-          where: {
-            flashSaleCampaign: {
-              startAt: { lte: now },
-              endAt: { gt: now }
-            }
-          },
-          select: {
-            flashSaleCampaign: {
-              select: {
-                id: true,
-                discountType: true,
-                discountValue: true,
-                endAt: true
-              }
-            }
-          }
-        }
-      }
+      select: getProductCardSelect(now)
     }),
     prisma.product.count({ where: whereClause })
   ]);
