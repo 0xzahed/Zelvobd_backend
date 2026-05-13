@@ -7,6 +7,7 @@ import { resolveStoredRelativePath } from '../../utils/paths.js';
 
 type CreateBannerPayload = {
   title: string;
+  subTitle?: string;
   url: string;
   categoryId: string;
   inHomePage: boolean;
@@ -16,6 +17,7 @@ type CreateBannerPayload = {
 
 type UpdateBannerPayload = {
   title?: string;
+  subTitle?: string;
   url?: string;
   categoryId?: string;
   inHomePage?: boolean;
@@ -26,6 +28,7 @@ type UpdateBannerPayload = {
 const bannerSelect = {
   id: true,
   title: true,
+  subTitle: true,
   url: true,
   categoryId: true,
   inHomePage: true,
