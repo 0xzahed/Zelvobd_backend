@@ -232,6 +232,7 @@ model ProductVariant {
 model Banner {
   id         String   @id @default(cuid())
   title      String
+  subTitle   String?
   url        String
   categoryId String?
   inHomePage Boolean  @default(false)

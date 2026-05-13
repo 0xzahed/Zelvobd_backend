@@ -48,6 +48,7 @@ const createBanner = catchAsync(
 
     const banner = await bannerService.createBanner({
       title: parsedBody.data.title,
+      subTitle: parsedBody.data.subTitle,
       url: parsedBody.data.url,
       categoryId: parsedBody.data.categoryId,
       inHomePage: parsedBody.data.inHomePage,
@@ -130,6 +131,7 @@ const updateBanner = catchAsync(
 
     const payload: {
       title?: string;
+      subTitle?: string;
       url?: string;
       categoryId?: string;
       inHomePage?: boolean;
