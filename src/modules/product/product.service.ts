@@ -33,7 +33,7 @@ const calculateFlashSalePrice = (
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const mapProductWithFlashSale = (product: any) => {
+export const mapProductWithFlashSale = (product: any, includeVariants = false) => {
   if (!product) return product;
 
   let isFlashSale = false;
@@ -74,7 +74,8 @@ export const mapProductWithFlashSale = (product: any) => {
     ...rest,
     isFlashSale,
     flashSaleEndsAt,
-    firstVariant: mappedVariants[0] ?? null
+    firstVariant: mappedVariants[0] ?? null,
+    ...(includeVariants ? { variants: mappedVariants } : {})
   };
 };
 
