@@ -14,6 +14,7 @@ import { topCatalogRouter } from '../modules/topCatalog/topCatalog.route.js';
 import { youtubeVideoRouter } from '../modules/youtubeVideo/youtubeVideo.route.js';
 import { trendingRouter } from '../modules/trending/trending.route.js';
 import { uploadRouter } from '../modules/upload/upload.route.js';
+import { promoRouter } from '../modules/promo/promo.route.js';
 
 export const router = Router();
 
@@ -30,4 +31,5 @@ router.use('/top-catalog', topCatalogRouter);
 router.use('/youtube-videos', youtubeVideoRouter);
 router.use('/trending', trendingRouter);
 router.use('/uploads', uploadRouter);
+router.use('/promos', promoRouter);
 

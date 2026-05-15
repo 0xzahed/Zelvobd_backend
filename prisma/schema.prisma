@@ -367,3 +367,27 @@ model TrendingCampaignExcludedProduct {
   @@index([productId])
   @@map("trending_campaign_excluded_products")
 }
+
+enum PromoDiscountType {
+  AMOUNT
+  PERCENT
+}
+
+model PromoCode {
+  id             String            @id @default(cuid())
+  code           String            @unique
+  discountType   PromoDiscountType
+  discountValue  Decimal           @db.Decimal(10, 2)
+  minOrderValue  Decimal?          @db.Decimal(10, 2)
+  maxDiscount    Decimal?          @db.Decimal(10, 2)
+  startDate      DateTime?
+  endDate        DateTime?
+  isActive       Boolean           @default(true)
+  usageCount     Int               @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([code])
+  @@index([isActive])
+  @@map("promo_codes")
+}
