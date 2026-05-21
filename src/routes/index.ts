@@ -15,6 +15,7 @@ import { youtubeVideoRouter } from '../modules/youtubeVideo/youtubeVideo.route.j
 import { trendingRouter } from '../modules/trending/trending.route.js';
 import { uploadRouter } from '../modules/upload/upload.route.js';
 import { promoRouter } from '../modules/promo/promo.route.js';
+import { orderRouter } from '../modules/order/order.route.js';
 
 export const router = Router();
 
@@ -32,4 +33,5 @@ router.use('/youtube-videos', youtubeVideoRouter);
 router.use('/trending', trendingRouter);
 router.use('/uploads', uploadRouter);
 router.use('/promos', promoRouter);
+router.use('/orders', orderRouter);
 
