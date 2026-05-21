@@ -122,6 +122,7 @@ model Product {
   freeDeliveryExclusions    FreeDeliveryCampaignExcludedProduct[]
   trendingCampaignItems     TrendingCampaignProduct[]
   trendingExclusions        TrendingCampaignExcludedProduct[]
+  orderItems                OrderItem[]
 
   @@index([categoryId])
   @@index([subCategoryId])
@@ -390,4 +391,69 @@ model PromoCode {
   @@index([code])
   @@index([isActive])
   @@map("promo_codes")
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  HOLD
+  PICKUP
+  DELIVERED
+  CUSTOMER_CANCELLED
+  CANCELLED
+  TRASH
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  code            String      @unique
+  
+  customerName    String
+  customerPhone   String
+  address         String
+  district        String
+  union           String?
+  orderNotes      String?     @db.Text
+
+  subtotal        Decimal     @db.Decimal(10, 2)
+  shippingCharge  Decimal     @db.Decimal(10, 2)
+  discountAmount  Decimal     @db.Decimal(10, 2) @default(0)
+  total           Decimal     @db.Decimal(10, 2)
+  
+  promoCode       String?
+
+  status          OrderStatus @default(PENDING)
+  
+  items           OrderItem[]
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([code])
+  @@index([status])
+  @@index([customerPhone])
+  @@map("orders")
+}
+
+model OrderItem {
+  id              String      @id @default(cuid())
+  orderId         String
+  productId       String
+  
+  productName     String
+  productImage    String?
+  price           Decimal     @db.Decimal(10, 2)
+  quantity        Int
+  color           String?
+  size            String?
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  order           Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         Product?    @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
 }
