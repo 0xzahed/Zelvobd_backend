@@ -550,7 +550,7 @@ const getSingleProduct = async (id: string) => {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Product not found');
   }
 
-  return mapProductWithFlashSale(product);
+  return mapProductWithFlashSale(product, true);
 };
 
 const getProductBySlug = async (slug: string) => {
@@ -563,7 +563,7 @@ const getProductBySlug = async (slug: string) => {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Product not found');
   }
 
-  return mapProductWithFlashSale(product);
+  return mapProductWithFlashSale(product, true);
 };
 
 const updateProduct = async (id: string, payload: UpdateProductPayload) => {
