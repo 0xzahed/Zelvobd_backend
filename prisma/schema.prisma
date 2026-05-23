@@ -99,12 +99,13 @@ model Product {
   subCategoryId         String
   title                 String
   slug                  String   @unique
+  brand                 String?
   descriptionDelta      Json
   descriptionHtml       String
   extraDescriptionDelta Json?
   extraDescriptionHtml  String?
   weight                String
-  material              String
+  material              String?
   stock                 Boolean  @default(true)
   availability          Boolean  @default(true)
   isFreeDelivery        Boolean  @default(false)
@@ -216,7 +217,7 @@ model ProductVariant {
   actualPrice     Decimal  @db.Decimal(10, 2)
   discountedPrice Decimal  @db.Decimal(10, 2)
   color           String
-  size            String
+  size            String?
   imageUrl        String
   imagePath       String
   barcodeUrl      String?

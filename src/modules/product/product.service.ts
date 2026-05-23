@@ -111,6 +111,7 @@ const getProductSelect = (now: Date = new Date()) => ({
   subCategoryId: true,
   title: true,
   slug: true,
+  brand: true,
   descriptionDelta: true,
   descriptionHtml: true,
   extraDescriptionDelta: true,
@@ -179,6 +180,7 @@ export const getProductCardSelect = (now: Date = new Date()) => ({
   slugId: true,
   slug: true,
   title: true,
+  brand: true,
   stock: true,
   availability: true,
   isFreeDelivery: true,
@@ -449,37 +451,38 @@ const createProduct = async (payload: CreateProductPayload) => {
     });
 
     const extraDescriptionDelta = payload.extraDescriptionDelta as Prisma.InputJsonValue | undefined;
+    const createData: Prisma.ProductUncheckedCreateInput = {
+      categoryId: payload.categoryId,
+      subCategoryId: payload.subCategoryId,
+      title: payload.title,
+      slug: generateSlug(payload.title),
+      brand: payload.brand,
+      descriptionDelta: payload.descriptionDelta as Prisma.InputJsonValue,
+      descriptionHtml: payload.descriptionHtml,
+      extraDescriptionDelta,
+      extraDescriptionHtml: payload.extraDescriptionHtml,
+      weight: payload.weight,
+      material: payload.material,
+      stock: payload.stock,
+      availability: payload.availability,
+      isFreeDelivery,
+      isTrending,
+      videoUrl: payload.videoUrl,
+      videoPath: payload.videoPath,
+      variants: {
+        create: payload.variants.map((variant) => ({
+          actualPrice: variant.actualPrice,
+          discountedPrice: variant.discountedPrice,
+          color: variant.color,
+          size: variant.size ?? null,
+          imageUrl: variant.imageUrl,
+          imagePath: variant.imagePath
+        }))
+      }
+    };
 
     const product = await prisma.product.create({
-      data: {
-        categoryId: payload.categoryId,
-        subCategoryId: payload.subCategoryId,
-        title: payload.title,
-        slug: generateSlug(payload.title),
-        descriptionDelta: payload.descriptionDelta as Prisma.InputJsonValue,
-        descriptionHtml: payload.descriptionHtml,
-        extraDescriptionDelta,
-        extraDescriptionHtml: payload.extraDescriptionHtml,
-        weight: payload.weight,
-        material: payload.material,
-        stock: payload.stock,
-        availability: payload.availability,
-        isFreeDelivery,
-        isTrending,
-        // status: payload.status,
-        videoUrl: payload.videoUrl,
-        videoPath: payload.videoPath,
-        variants: {
-          create: payload.variants.map((variant) => ({
-            actualPrice: variant.actualPrice,
-            discountedPrice: variant.discountedPrice,
-            color: variant.color,
-            size: variant.size,
-            imageUrl: variant.imageUrl,
-            imagePath: variant.imagePath
-          }))
-        }
-      },
+      data: createData,
       select: getProductSelect(new Date())
     });
 
@@ -569,6 +572,7 @@ const updateProduct = async (id: string, payload: UpdateProductPayload) => {
     select: {
       id: true,
       title: true,
+      brand: true,
       categoryId: true,
       subCategoryId: true,
       descriptionHtml: true,
@@ -658,51 +662,54 @@ const updateProduct = async (id: string, payload: UpdateProductPayload) => {
       }
     }
 
+    const updateData: Prisma.ProductUncheckedUpdateInput = {
+      ...(payload.categoryId ? { categoryId: payload.categoryId } : {}),
+      ...(payload.subCategoryId ? { subCategoryId: payload.subCategoryId } : {}),
+      ...(payload.title
+        ? {
+            title: payload.title,
+            slug: generateSlug(payload.title)
+          }
+        : {}),
+      ...(typeof payload.brand !== 'undefined' ? { brand: payload.brand } : {}),
+      ...(payload.descriptionDelta
+        ? { descriptionDelta: payload.descriptionDelta as Prisma.InputJsonValue }
+        : {}),
+      ...(typeof payload.descriptionHtml === 'string'
+        ? { descriptionHtml: payload.descriptionHtml }
+        : {}),
+      ...(typeof payload.extraDescriptionDelta !== 'undefined' ? { extraDescriptionDelta } : {}),
+      ...(typeof payload.extraDescriptionHtml !== 'undefined'
+        ? { extraDescriptionHtml: payload.extraDescriptionHtml }
+        : {}),
+      ...(payload.weight ? { weight: payload.weight } : {}),
+      ...(typeof payload.material !== 'undefined' ? { material: payload.material } : {}),
+      ...(typeof payload.stock === 'boolean' ? { stock: payload.stock } : {}),
+      ...(typeof payload.availability === 'boolean' ? { availability: payload.availability } : {}),
+      isFreeDelivery: nextIsFreeDelivery,
+      isTrending: nextIsTrending,
+      videoUrl: nextVideoUrl,
+      videoPath: nextVideoPath,
+      ...(shouldReplaceVariants
+        ? {
+            variants: {
+              deleteMany: {},
+              create: nextVariants.map((variant) => ({
+                actualPrice: variant.actualPrice,
+                discountedPrice: variant.discountedPrice,
+                color: variant.color,
+                size: variant.size ?? null,
+                imageUrl: variant.imageUrl,
+                imagePath: variant.imagePath
+              }))
+            }
+          }
+        : {})
+    };
+
     const updatedProduct = await prisma.product.update({
       where: { id },
-      data: {
-        ...(payload.categoryId ? { categoryId: payload.categoryId } : {}),
-        ...(payload.subCategoryId ? { subCategoryId: payload.subCategoryId } : {}),
-        ...(payload.title
-          ? {
-              title: payload.title,
-              slug: generateSlug(payload.title)
-            }
-          : {}),
-        ...(payload.descriptionDelta
-          ? { descriptionDelta: payload.descriptionDelta as Prisma.InputJsonValue }
-          : {}),
-        ...(typeof payload.descriptionHtml === 'string'
-          ? { descriptionHtml: payload.descriptionHtml }
-          : {}),
-        ...(typeof payload.extraDescriptionDelta !== 'undefined' ? { extraDescriptionDelta } : {}),
-        ...(typeof payload.extraDescriptionHtml !== 'undefined'
-          ? { extraDescriptionHtml: payload.extraDescriptionHtml }
-          : {}),
-        ...(payload.weight ? { weight: payload.weight } : {}),
-        ...(payload.material ? { material: payload.material } : {}),
-        ...(typeof payload.stock === 'boolean' ? { stock: payload.stock } : {}),
-        ...(typeof payload.availability === 'boolean' ? { availability: payload.availability } : {}),
-        isFreeDelivery: nextIsFreeDelivery,
-        isTrending: nextIsTrending,
-        videoUrl: nextVideoUrl,
-        videoPath: nextVideoPath,
-        ...(shouldReplaceVariants
-          ? {
-              variants: {
-                deleteMany: {},
-                create: nextVariants.map((variant) => ({
-                  actualPrice: variant.actualPrice,
-                  discountedPrice: variant.discountedPrice,
-                  color: variant.color,
-                  size: variant.size,
-                  imageUrl: variant.imageUrl,
-                  imagePath: variant.imagePath
-                }))
-              }
-            }
-          : {})
-      },
+      data: updateData,
       select: getProductSelect(new Date())
     });
 
@@ -817,6 +824,7 @@ const copyProduct = async (id: string) => {
       categoryId: true,
       subCategoryId: true,
       title: true,
+      brand: true,
       descriptionDelta: true,
       descriptionHtml: true,
       extraDescriptionDelta: true,
@@ -866,7 +874,7 @@ const copyProduct = async (id: string) => {
           actualPrice: variant.actualPrice,
           discountedPrice: variant.discountedPrice,
           color: variant.color,
-          size: variant.size,
+          size: variant.size ?? null,
           imagePath: copiedImage.copiedRelativePath,
           imageUrl: copiedImage.copiedPublicUrl
         };
@@ -889,6 +897,7 @@ const copyProduct = async (id: string) => {
         subCategoryId: existingProduct.subCategoryId,
         title: existingProduct.title,
         slug: generateSlug(existingProduct.title),
+        brand: existingProduct.brand,
         descriptionDelta: existingProduct.descriptionDelta as Prisma.InputJsonValue,
         descriptionHtml: existingProduct.descriptionHtml,
         extraDescriptionDelta:
@@ -1018,4 +1027,3 @@ export const productService = {
   regenerateProductBarcodes,
   resolveScannedBarcode
 };
-

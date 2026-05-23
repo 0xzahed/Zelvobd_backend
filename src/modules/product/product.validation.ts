@@ -32,6 +32,21 @@ const booleanFromStringSchema = z.preprocess((value) => {
   return value;
 }, z.boolean());
 
+const emptyStringToNull = (value: unknown): unknown => {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const trimmedValue = value.trim();
+  return trimmedValue.length === 0 ? null : trimmedValue;
+};
+
+const optionalNullableStringSchema = (maxLength: number, tooLongMessage: string) =>
+  z.preprocess(
+    emptyStringToNull,
+    z.string().trim().max(maxLength, tooLongMessage).nullable().optional()
+  );
+
 const quillDeltaSchema = z
   .object({
     ops: z.array(z.record(z.string(), z.unknown())).min(1, 'Rich text delta content is required')
@@ -45,7 +60,7 @@ const createProductVariantSchema = z
       .number()
       .nonnegative('Variant discounted price cannot be negative'),
     color: z.string().trim().min(1, 'Variant color is required').max(80, 'Variant color is too long'),
-    size: z.string().trim().min(1, 'Variant size is required').max(80, 'Variant size is too long')
+    size: optionalNullableStringSchema(80, 'Variant size is too long')
   })
   .superRefine((value, context) => {
     if (value.discountedPrice > value.actualPrice) {
@@ -62,6 +77,7 @@ export const createProductSchema = z
     categoryId: z.string().trim().min(1, 'Category is required'),
     subCategoryId: z.string().trim().min(1, 'Subcategory is required'),
     title: z.string().trim().min(1, 'Product title is required').max(220, 'Product title is too long'),
+    brand: optionalNullableStringSchema(120, 'Brand is too long'),
     descriptionDelta: z.preprocess(parseJsonFromString, quillDeltaSchema),
     descriptionHtml: z.string().trim().min(1, 'Description HTML is required'),
     extraDescriptionDelta: z.preprocess(parseJsonFromString, quillDeltaSchema).optional(),
@@ -71,7 +87,7 @@ export const createProductSchema = z
       .min(1, 'Extra description HTML cannot be empty')
       .optional(),
     weight: z.string().trim().min(1, 'Product weight is required').max(80, 'Product weight is too long'),
-    material: z.string().trim().min(1, 'Material is required').max(120, 'Material is too long'),
+    material: optionalNullableStringSchema(120, 'Material is too long'),
     stock: booleanFromStringSchema,
     availability: booleanFromStringSchema,
     variants: z.preprocess(
@@ -97,6 +113,7 @@ export const updateProductSchema = z
     categoryId: z.string().trim().min(1, 'Category is required').optional(),
     subCategoryId: z.string().trim().min(1, 'Subcategory is required').optional(),
     title: z.string().trim().min(1, 'Product title is required').max(220, 'Product title is too long').optional(),
+    brand: optionalNullableStringSchema(120, 'Brand is too long'),
     descriptionDelta: z.preprocess(parseJsonFromString, quillDeltaSchema).optional(),
     descriptionHtml: z.string().trim().min(1, 'Description HTML is required').optional(),
     extraDescriptionDelta: z.preprocess(parseJsonFromString, quillDeltaSchema).optional(),
@@ -106,7 +123,7 @@ export const updateProductSchema = z
       .min(1, 'Extra description HTML cannot be empty')
       .optional(),
     weight: z.string().trim().min(1, 'Product weight is required').max(80, 'Product weight is too long').optional(),
-    material: z.string().trim().min(1, 'Material is required').max(120, 'Material is too long').optional(),
+    material: optionalNullableStringSchema(120, 'Material is too long'),
     stock: booleanFromStringSchema.optional(),
     availability: booleanFromStringSchema.optional(),
     variants: z.preprocess(

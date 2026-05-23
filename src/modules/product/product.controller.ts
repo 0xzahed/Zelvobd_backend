@@ -33,7 +33,6 @@ const productFieldRequiredMessageMap: Record<string, string> = {
   extraDescriptionDelta: 'Extra description delta is required',
   extraDescriptionHtml: 'Extra description HTML is required',
   weight: 'Product weight is required',
-  material: 'Material is required',
   stock: 'Stock is required',
   availability: 'Availability is required',
   variants: 'At least one product variant is required'
@@ -42,8 +41,7 @@ const productFieldRequiredMessageMap: Record<string, string> = {
 const variantFieldRequiredMessageMap: Record<string, string> = {
   actualPrice: 'Variant actual price is required',
   discountedPrice: 'Variant discounted price is required',
-  color: 'Variant color is required',
-  size: 'Variant size is required'
+  color: 'Variant color is required'
 };
 
 const getProductValidationErrorMessage = (error: z.ZodError): string => {
@@ -196,7 +194,7 @@ const validateAndBuildUpdateProductPayload = (req: Request) => {
       actualPrice: number;
       discountedPrice: number;
       color: string;
-      size: string;
+      size?: string | null;
       imageUrl: string;
       imagePath: string;
     }>;
