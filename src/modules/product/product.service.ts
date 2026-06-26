@@ -123,6 +123,8 @@ const getProductSelect = (now: Date = new Date()) => ({
   isFreeDelivery: true,
   isTrending: true,
   videoUrl: true,
+  specifications: true,
+  variantLabel: true,
   createdAt: true,
   updatedAt: true,
   category: {
@@ -148,6 +150,7 @@ const getProductSelect = (now: Date = new Date()) => ({
       actualPrice: true,
       discountedPrice: true,
       color: true,
+      colorCode: true,
       size: true,
       imageUrl: true,
       barcodeUrl: true,
@@ -209,6 +212,9 @@ export const getProductCardSelect = (now: Date = new Date()) => ({
       id: true,
       actualPrice: true,
       discountedPrice: true,
+      color: true,
+      colorCode: true,
+      size: true,
       imageUrl: true,
       imagePath: true,
       createdAt: true
