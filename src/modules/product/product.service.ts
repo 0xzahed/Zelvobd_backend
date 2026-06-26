@@ -465,6 +465,7 @@ const createProduct = async (payload: CreateProductPayload) => {
       material: payload.material,
       stock: payload.stock,
       availability: payload.availability,
+      variantLabel: payload.variantLabel,
       isFreeDelivery,
       isTrending,
       videoUrl: payload.videoUrl,
@@ -474,6 +475,7 @@ const createProduct = async (payload: CreateProductPayload) => {
           actualPrice: variant.actualPrice,
           discountedPrice: variant.discountedPrice,
           color: variant.color,
+          colorCode: variant.colorCode ?? null,
           size: variant.size ?? null,
           imageUrl: variant.imageUrl,
           imagePath: variant.imagePath
@@ -686,6 +688,7 @@ const updateProduct = async (id: string, payload: UpdateProductPayload) => {
       ...(typeof payload.material !== 'undefined' ? { material: payload.material } : {}),
       ...(typeof payload.stock === 'boolean' ? { stock: payload.stock } : {}),
       ...(typeof payload.availability === 'boolean' ? { availability: payload.availability } : {}),
+      ...(typeof payload.variantLabel !== 'undefined' ? { variantLabel: payload.variantLabel } : {}),
       isFreeDelivery: nextIsFreeDelivery,
       isTrending: nextIsTrending,
       videoUrl: nextVideoUrl,
@@ -698,6 +701,7 @@ const updateProduct = async (id: string, payload: UpdateProductPayload) => {
                 actualPrice: variant.actualPrice,
                 discountedPrice: variant.discountedPrice,
                 color: variant.color,
+                colorCode: variant.colorCode ?? null,
                 size: variant.size ?? null,
                 imageUrl: variant.imageUrl,
                 imagePath: variant.imagePath

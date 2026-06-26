@@ -91,6 +91,7 @@ export const createProductSchema = z
     material: optionalNullableStringSchema(120, 'Material is too long'),
     stock: booleanFromStringSchema,
     availability: booleanFromStringSchema,
+    variantLabel: optionalNullableStringSchema(80, 'Variant label is too long'),
     variants: z.preprocess(
       parseJsonFromString,
       z.array(createProductVariantSchema).min(1, 'At least one product variant is required').max(50)
@@ -127,6 +128,7 @@ export const updateProductSchema = z
     material: optionalNullableStringSchema(120, 'Material is too long'),
     stock: booleanFromStringSchema.optional(),
     availability: booleanFromStringSchema.optional(),
+    variantLabel: optionalNullableStringSchema(80, 'Variant label is too long'),
     variants: z.preprocess(
       parseJsonFromString,
       z.array(createProductVariantSchema).min(1, 'At least one product variant is required').max(50)

@@ -112,6 +112,7 @@ model Product {
   isTrending            Boolean  @default(false)
   videoUrl              String?
   videoPath             String?
+  variantLabel          String?  @default("Size")
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
