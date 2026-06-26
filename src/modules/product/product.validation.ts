@@ -60,6 +60,7 @@ const createProductVariantSchema = z
       .number()
       .nonnegative('Variant discounted price cannot be negative'),
     color: z.string().trim().min(1, 'Variant color is required').max(80, 'Variant color is too long'),
+    colorCode: optionalNullableStringSchema(20, 'Variant color code is too long'),
     size: optionalNullableStringSchema(80, 'Variant size is too long')
   })
   .superRefine((value, context) => {

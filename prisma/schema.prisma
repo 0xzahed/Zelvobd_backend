@@ -217,6 +217,7 @@ model ProductVariant {
   actualPrice     Decimal  @db.Decimal(10, 2)
   discountedPrice Decimal  @db.Decimal(10, 2)
   color           String
+  colorCode       String?
   size            String?
   imageUrl        String
   imagePath       String
