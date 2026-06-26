@@ -113,6 +113,7 @@ model Product {
   videoUrl              String?
   videoPath             String?
   variantLabel          String?  @default("Size")
+  specifications        Json?    @default("[]")
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 

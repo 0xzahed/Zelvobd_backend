@@ -53,6 +53,11 @@ const quillDeltaSchema = z
   })
   .passthrough();
 
+const specificationSchema = z.object({
+  title: z.string().trim().min(1, 'Title is required'),
+  information: z.string().trim().min(1, 'Information is required')
+});
+
 const createProductVariantSchema = z
   .object({
     actualPrice: z.coerce.number().positive('Variant actual price must be greater than 0'),
@@ -92,6 +97,10 @@ export const createProductSchema = z
     stock: booleanFromStringSchema,
     availability: booleanFromStringSchema,
     variantLabel: optionalNullableStringSchema(80, 'Variant label is too long'),
+    specifications: z.preprocess(
+      parseJsonFromString,
+      z.array(specificationSchema).max(50, 'Too many specifications').optional()
+    ),
     variants: z.preprocess(
       parseJsonFromString,
       z.array(createProductVariantSchema).min(1, 'At least one product variant is required').max(50)
@@ -129,6 +138,10 @@ export const updateProductSchema = z
     stock: booleanFromStringSchema.optional(),
     availability: booleanFromStringSchema.optional(),
     variantLabel: optionalNullableStringSchema(80, 'Variant label is too long'),
+    specifications: z.preprocess(
+      parseJsonFromString,
+      z.array(specificationSchema).max(50, 'Too many specifications').optional()
+    ),
     variants: z.preprocess(
       parseJsonFromString,
       z.array(createProductVariantSchema).min(1, 'At least one product variant is required').max(50)
