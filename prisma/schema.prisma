@@ -106,6 +106,7 @@ model Product {
   extraDescriptionHtml  String?
   weight                String
   material              String?
+  rating                Float?
   stock                 Boolean  @default(true)
   availability          Boolean  @default(true)
   isFreeDelivery        Boolean  @default(false)
