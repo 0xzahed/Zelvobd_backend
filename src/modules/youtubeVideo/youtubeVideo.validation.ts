@@ -17,9 +17,11 @@ const youtubeUrlSchema = z
   }, 'Only YouTube video link is allowed');
 
 export const createYoutubeVideoSchema = z.object({
+  title: z.string().trim().min(1, 'Title is required'),
   url: youtubeUrlSchema
 });
 
 export const updateYoutubeVideoSchema = z.object({
-  url: youtubeUrlSchema
+  title: z.string().trim().min(1, 'Title is required').optional(),
+  url: youtubeUrlSchema.optional()
 });

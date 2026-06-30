@@ -4,16 +4,25 @@ import { ApiError } from '../../core/errors/ApiError.js';
 import { prisma } from '../../lib/prisma.js';
 
 type CreateYoutubeVideoPayload = {
+  title: string;
   url: string;
+  imageUrl: string;
+  imagePath: string;
 };
 
 type UpdateYoutubeVideoPayload = {
-  url: string;
+  title?: string;
+  url?: string;
+  imageUrl?: string;
+  imagePath?: string;
 };
 
 const youtubeVideoSelect = {
   id: true,
+  title: true,
   url: true,
+  imageUrl: true,
+  imagePath: true,
   createdAt: true,
   updatedAt: true
 } as const;
@@ -38,7 +47,8 @@ const updateYoutubeVideo = async (id: string, payload: UpdateYoutubeVideoPayload
   const existingYoutubeVideo = await prisma.youtubeVideo.findUnique({
     where: { id },
     select: {
-      id: true
+      id: true,
+      imagePath: true
     }
   });
 
@@ -46,18 +56,21 @@ const updateYoutubeVideo = async (id: string, payload: UpdateYoutubeVideoPayload
     throw new ApiError(StatusCodes.NOT_FOUND, 'YouTube video not found');
   }
 
-  return prisma.youtubeVideo.update({
+  const updatedVideo = await prisma.youtubeVideo.update({
     where: { id },
     data: payload,
     select: youtubeVideoSelect
   });
+
+  return { updatedVideo, oldImagePath: payload.imagePath ? existingYoutubeVideo.imagePath : null };
 };
 
 const deleteYoutubeVideo = async (id: string) => {
   const existingYoutubeVideo = await prisma.youtubeVideo.findUnique({
     where: { id },
     select: {
-      id: true
+      id: true,
+      imagePath: true
     }
   });
 
@@ -68,6 +81,8 @@ const deleteYoutubeVideo = async (id: string) => {
   await prisma.youtubeVideo.delete({
     where: { id }
   });
+
+  return existingYoutubeVideo.imagePath;
 };
 
 export const youtubeVideoService = {
