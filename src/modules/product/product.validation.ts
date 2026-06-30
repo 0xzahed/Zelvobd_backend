@@ -41,11 +41,22 @@ const emptyStringToNull = (value: unknown): unknown => {
   return trimmedValue.length === 0 ? null : trimmedValue;
 };
 
-const optionalNullableStringSchema = (maxLength: number, tooLongMessage: string) =>
+const optionalNullableStringSchema = (maxLength: number, errorMessage: string) =>
   z.preprocess(
     emptyStringToNull,
-    z.string().trim().max(maxLength, tooLongMessage).nullable().optional()
+    z.string().trim().max(maxLength, errorMessage).nullable().optional()
   );
+
+const optionalFloatFromStringSchema = z.preprocess((value) => {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed === '') return undefined;
+    const parsed = parseFloat(trimmed);
+    return isNaN(parsed) ? undefined : parsed;
+  }
+  return undefined;
+}, z.number().min(0, 'Rating cannot be less than 0').max(5, 'Rating cannot be more than 5').optional());
 
 const quillDeltaSchema = z
   .object({
@@ -94,6 +105,7 @@ export const createProductSchema = z
       .optional(),
     weight: z.string().trim().min(1, 'Product weight is required').max(80, 'Product weight is too long'),
     material: optionalNullableStringSchema(120, 'Material is too long'),
+    rating: optionalFloatFromStringSchema,
     stock: booleanFromStringSchema,
     availability: booleanFromStringSchema,
     variantLabel: optionalNullableStringSchema(80, 'Variant label is too long'),
@@ -135,9 +147,11 @@ export const updateProductSchema = z
       .optional(),
     weight: z.string().trim().min(1, 'Product weight is required').max(80, 'Product weight is too long').optional(),
     material: optionalNullableStringSchema(120, 'Material is too long'),
+    rating: optionalFloatFromStringSchema,
     stock: booleanFromStringSchema.optional(),
     availability: booleanFromStringSchema.optional(),
     variantLabel: optionalNullableStringSchema(80, 'Variant label is too long'),
+    deleteVideo: booleanFromStringSchema.optional(),
     specifications: z.preprocess(
       parseJsonFromString,
       z.array(specificationSchema).max(50, 'Too many specifications').optional()

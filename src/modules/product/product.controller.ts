@@ -200,6 +200,7 @@ const validateAndBuildUpdateProductPayload = (req: Request) => {
     }>;
     videoUrl?: string;
     videoPath?: string;
+    deleteVideo?: boolean;
   } = {
     ...restData
   };

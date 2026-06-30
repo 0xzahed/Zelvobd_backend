@@ -106,6 +106,7 @@ model Product {
   extraDescriptionHtml  String?
   weight                String
   material              String?
+  rating                Float?
   stock                 Boolean  @default(true)
   availability          Boolean  @default(true)
   isFreeDelivery        Boolean  @default(false)
@@ -255,7 +256,10 @@ model Banner {
 
 model YoutubeVideo {
   id        String   @id @default(cuid())
+  title     String
   url       String
+  imageUrl  String
+  imagePath String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

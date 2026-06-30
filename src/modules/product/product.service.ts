@@ -118,6 +118,7 @@ const getProductSelect = (now: Date = new Date()) => ({
   extraDescriptionHtml: true,
   weight: true,
   material: true,
+  rating: true,
   stock: true,
   availability: true,
   isFreeDelivery: true,
@@ -184,6 +185,7 @@ export const getProductCardSelect = (now: Date = new Date()) => ({
   slug: true,
   title: true,
   brand: true,
+  rating: true,
   stock: true,
   availability: true,
   isFreeDelivery: true,
@@ -468,8 +470,9 @@ const createProduct = async (payload: CreateProductPayload) => {
       extraDescriptionDelta,
       extraDescriptionHtml: payload.extraDescriptionHtml,
       weight: payload.weight,
-      material: payload.material,
-      stock: payload.stock,
+      material: payload.material ?? null,
+      rating: payload.rating ?? null,
+      stock: payload.stock ?? true,
       availability: payload.availability,
       variantLabel: payload.variantLabel,
       specifications: payload.specifications ? (payload.specifications as unknown as Prisma.InputJsonValue) : [],
@@ -658,8 +661,8 @@ const updateProduct = async (id: string, payload: UpdateProductPayload) => {
       );
     }
 
-    let nextVideoPath = payload.videoPath ?? existingProduct.videoPath;
-    let nextVideoUrl = payload.videoUrl ?? existingProduct.videoUrl;
+    let nextVideoPath = payload.deleteVideo ? null : (payload.videoPath ?? existingProduct.videoPath);
+    let nextVideoUrl = payload.deleteVideo ? null : (payload.videoUrl ?? existingProduct.videoUrl);
 
     if (payload.videoPath && existingProduct.videoPath) {
       const isSameVideo = await areRelativeFilesIdentical(payload.videoPath, existingProduct.videoPath);
@@ -691,9 +694,10 @@ const updateProduct = async (id: string, payload: UpdateProductPayload) => {
       ...(typeof payload.extraDescriptionHtml !== 'undefined'
         ? { extraDescriptionHtml: payload.extraDescriptionHtml }
         : {}),
-      ...(payload.weight ? { weight: payload.weight } : {}),
+      ...(typeof payload.weight !== 'undefined' ? { weight: payload.weight } : {}),
       ...(typeof payload.material !== 'undefined' ? { material: payload.material } : {}),
-      ...(typeof payload.stock === 'boolean' ? { stock: payload.stock } : {}),
+      ...(typeof payload.rating !== 'undefined' ? { rating: payload.rating } : {}),
+      ...(typeof payload.stock !== 'undefined' ? { stock: payload.stock } : {}),
       ...(typeof payload.availability === 'boolean' ? { availability: payload.availability } : {}),
       ...(typeof payload.variantLabel !== 'undefined' ? { variantLabel: payload.variantLabel } : {}),
       ...(typeof payload.specifications !== 'undefined' ? { specifications: payload.specifications as unknown as Prisma.InputJsonValue } : {}),

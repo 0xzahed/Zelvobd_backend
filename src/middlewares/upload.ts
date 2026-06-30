@@ -128,3 +128,4 @@ export const categoryImageUpload = createImageUploadMiddleware('categories');
 export const subCategoryImageUpload = createImageUploadMiddleware('subCategories');
 export const bannerImageUpload = createImageUploadMiddleware('banners');
 export const richTextImageUpload = createImageUploadMiddleware('richText');
+export const youtubeVideoImageUpload = createImageUploadMiddleware('youtubeVideos');
