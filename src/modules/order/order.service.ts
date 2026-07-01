@@ -2,6 +2,7 @@ import { StatusCodes } from 'http-status-codes';
 import { Prisma, OrderStatus } from '@prisma/client';
 import { ApiError } from '../../core/errors/ApiError.js';
 import { prisma } from '../../lib/prisma.js';
+import { freeDeliveryService } from '../freeDelivery/freeDelivery.service.js';
 
 type OrderItemInput = {
   productId: string;
@@ -110,7 +111,28 @@ const checkout = async (payload: CheckoutPayload) => {
     });
   }
 
-  const shippingCharge = 15; 
+  let hasFreeDelivery = false;
+  for (const product of products) {
+    const isFree = await freeDeliveryService.resolveFreeDeliveryForProduct({
+      productId: product.id,
+      categoryId: product.categoryId,
+      subCategoryId: product.subCategoryId
+    });
+    if (isFree) {
+      hasFreeDelivery = true;
+      break;
+    }
+  }
+
+  let shippingCharge = 0;
+  if (!hasFreeDelivery) {
+    if (payload.district === 'Inside Dhaka') {
+      shippingCharge = 100;
+    } else {
+      shippingCharge = 150;
+    }
+  }
+
   let discountAmount = 0;
   let validPromoCode: string | null = null;
 
