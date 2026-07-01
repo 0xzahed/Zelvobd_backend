@@ -430,6 +430,8 @@ model Order {
   total           Decimal     @db.Decimal(10, 2)
   
   promoCode       String?
+  consignmentId   String?
+  trackingCode    String?
 
   status          OrderStatus @default(PENDING)
   
