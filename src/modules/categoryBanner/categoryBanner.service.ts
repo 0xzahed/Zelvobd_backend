@@ -1,10 +1,18 @@
-import fs from 'node:fs';
 import { StatusCodes } from 'http-status-codes';
-import { prisma } from '../../lib/prisma.js';
+import fs from 'node:fs';
 import { ApiError } from '../../core/errors/ApiError.js';
+import { prisma } from '../../lib/prisma.js';
 
-export const getCategoryBanners = async () => {
+export interface ICategoryBannerPayload {
+  title: string;
+  subTitle?: string;
+  url?: string;
+  categoryId: string;
+}
+
+export const getCategoryBanners = async (categoryId?: string) => {
   const banners = await prisma.categoryBanner.findMany({
+    where: categoryId ? { categoryId } : undefined,
     include: {
       category: true
     },
@@ -14,7 +22,10 @@ export const getCategoryBanners = async () => {
   return banners;
 };
 
-export const createCategoryBanner = async (payload: any, file?: Express.Multer.File) => {
+export const createCategoryBanner = async (
+  payload: ICategoryBannerPayload,
+  file?: Express.Multer.File
+) => {
   if (!file) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Image is required');
   }
@@ -47,7 +58,11 @@ export const createCategoryBanner = async (payload: any, file?: Express.Multer.F
   return banner;
 };
 
-export const updateCategoryBanner = async (id: string, payload: any, file?: Express.Multer.File) => {
+export const updateCategoryBanner = async (
+  id: string,
+  payload: Partial<ICategoryBannerPayload>,
+  file?: Express.Multer.File
+) => {
   const existingBanner = await prisma.categoryBanner.findUnique({
     where: { id }
   });
@@ -67,7 +82,7 @@ export const updateCategoryBanner = async (id: string, payload: any, file?: Expr
     }
   }
 
-  const updateData: any = {
+  const updateData: Record<string, unknown> = {
     title: payload.title,
     subTitle: payload.subTitle || null,
     url: payload.url || null,

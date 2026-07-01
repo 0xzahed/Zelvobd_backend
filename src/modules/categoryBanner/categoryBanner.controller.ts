@@ -6,7 +6,8 @@ import { categoryBannerService } from './categoryBanner.service.js';
 import { createCategoryBannerSchema, updateCategoryBannerSchema } from './categoryBanner.validation.js';
 
 const getCategoryBanners = catchAsync(async (req: Request, res: Response) => {
-  const result = await categoryBannerService.getCategoryBanners();
+  const categoryId = req.query.categoryId as string | undefined;
+  const result = await categoryBannerService.getCategoryBanners(categoryId);
   sendResponse(req, res, {
     statusCode: StatusCodes.OK,
     message: 'Category Banners retrieved successfully',
