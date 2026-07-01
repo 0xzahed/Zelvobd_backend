@@ -223,3 +223,4 @@ export const richTextImageUpload = wrapUpload(createImageUploadMiddleware('richT
 export const youtubeVideoImageUpload = wrapUpload(
   createImageUploadMiddleware('youtubeVideos')
 );
+export const categoryBannerImageUpload = wrapUpload(createImageUploadMiddleware('categoryBanners'));

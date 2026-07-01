@@ -55,6 +55,7 @@ model Category {
   freeDeliveryCampaignItems FreeDeliveryCampaignCategory[]
   topCatalogItems           TopCatalogCategory[]
   trendingCampaignItems     TrendingCampaignCategory[]
+  categoryBanners           CategoryBanner[]
   createdAt                 DateTime                       @default(now())
   updatedAt                 DateTime                       @updatedAt
 
@@ -464,4 +465,21 @@ model OrderItem {
   @@index([orderId])
   @@index([productId])
   @@map("order_items")
+}
+
+model CategoryBanner {
+  id         String   @id @default(cuid())
+  title      String
+  subTitle   String?
+  url        String?
+  categoryId String
+  imageUrl   String
+  imagePath  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
+  @@map("category_banners")
 }
