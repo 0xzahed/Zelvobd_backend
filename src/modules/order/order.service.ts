@@ -111,26 +111,31 @@ const checkout = async (payload: CheckoutPayload) => {
     });
   }
 
-  let hasFreeDelivery = false;
-  for (const product of products) {
+  let allItemsFree = true;
+  let totalWeight = 0;
+
+  for (const item of items) {
+    const product = products.find(p => p.id === item.productId);
+    if (!product) continue;
+
     const isFree = await freeDeliveryService.resolveFreeDeliveryForProduct({
       productId: product.id,
       categoryId: product.categoryId,
       subCategoryId: product.subCategoryId
     });
-    if (isFree) {
-      hasFreeDelivery = true;
-      break;
+
+    if (!isFree) {
+      allItemsFree = false;
+      totalWeight += (parseFloat(product.weight) || 0) * item.quantity;
     }
   }
 
   let shippingCharge = 0;
-  if (!hasFreeDelivery) {
-    if (payload.district === 'Inside Dhaka') {
-      shippingCharge = 100;
-    } else {
-      shippingCharge = 150;
-    }
+  if (!allItemsFree) {
+    const baseCharge = payload.district === 'Inside Dhaka' ? 100 : 150;
+    const extraWeight = Math.max(0, totalWeight - 1);
+    const extraCharge = extraWeight * 20;
+    shippingCharge = baseCharge + extraCharge;
   }
 
   let discountAmount = 0;
