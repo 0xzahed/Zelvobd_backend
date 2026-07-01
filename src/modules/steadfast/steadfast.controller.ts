@@ -18,6 +18,31 @@ export const checkFraudStatus = async (req: Request, res: Response, next: NextFu
   }
 };
 
+export const syncOrders = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { orderIds } = req.body;
+    
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return sendResponse(req, res, {
+        statusCode: StatusCodes.BAD_REQUEST,
+        message: 'orderIds array is required',
+        data: null
+      });
+    }
+
+    const data = await steadfastService.syncOrders(orderIds);
+
+    sendResponse(req, res, {
+      statusCode: StatusCodes.OK,
+      message: `Successfully synced ${data.success} orders to Steadfast`,
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const steadfastController = {
   checkFraudStatus,
+  syncOrders,
 };
