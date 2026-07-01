@@ -1,8 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import type { NextFunction, Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import multer from 'multer';
+import sharp from 'sharp';
 
 import { ApiError } from '../core/errors/ApiError.js';
 import { uploadRootPath } from '../utils/paths.js';
@@ -85,7 +87,13 @@ const productMediaStorage = multer.diskStorage({
       return;
     }
 
-    callback(new ApiError(StatusCodes.BAD_REQUEST, `Unsupported upload field: ${file.fieldname}`), '');
+    callback(
+      new ApiError(
+        StatusCodes.BAD_REQUEST,
+        `Unsupported upload field: ${file.fieldname}`
+      ),
+      ''
+    );
   },
   filename: (_req, file, callback) => {
     callback(null, createSafeFileName(file.originalname, file.fieldname));
@@ -95,7 +103,9 @@ const productMediaStorage = multer.diskStorage({
 const productMediaFileFilter: multer.Options['fileFilter'] = (_req, file, callback) => {
   if (file.fieldname === 'variantImages') {
     if (!file.mimetype.startsWith('image/')) {
-      callback(new ApiError(StatusCodes.BAD_REQUEST, 'Only image files are allowed for variants'));
+      callback(
+        new ApiError(StatusCodes.BAD_REQUEST, 'Only image files are allowed for variants')
+      );
       return;
     }
 
@@ -105,7 +115,12 @@ const productMediaFileFilter: multer.Options['fileFilter'] = (_req, file, callba
 
   if (file.fieldname === 'video') {
     if (!file.mimetype.startsWith('video/')) {
-      callback(new ApiError(StatusCodes.BAD_REQUEST, 'Only video files are allowed for video field'));
+      callback(
+        new ApiError(
+          StatusCodes.BAD_REQUEST,
+          'Only video files are allowed for video field'
+        )
+      );
       return;
     }
 
@@ -113,19 +128,98 @@ const productMediaFileFilter: multer.Options['fileFilter'] = (_req, file, callba
     return;
   }
 
-  callback(new ApiError(StatusCodes.BAD_REQUEST, `Unsupported upload field: ${file.fieldname}`));
+  callback(
+    new ApiError(StatusCodes.BAD_REQUEST, `Unsupported upload field: ${file.fieldname}`)
+  );
 };
 
-export const productMediaUpload = multer({
-  storage: productMediaStorage,
-  fileFilter: productMediaFileFilter,
-  limits: {
-    fileSize: MAX_PRODUCT_UPLOAD_SIZE_IN_MB * 1024 * 1024
+const processImage = async (file: Express.Multer.File) => {
+  if (!file.mimetype.startsWith('image/')) return;
+  if (file.mimetype === 'image/webp' || file.mimetype === 'image/svg+xml') return; // Skip if already optimal
+
+  const originalPath = file.path;
+  const parsed = path.parse(originalPath);
+  const newFilename = parsed.name + '.webp';
+  const newPath = path.join(parsed.dir, newFilename);
+
+  // Resize and convert to WebP
+  await sharp(originalPath)
+    .resize({ width: 1200, withoutEnlargement: true })
+    .webp({ quality: 80 })
+    .toFile(newPath);
+
+  // Delete original file
+  fs.unlinkSync(originalPath);
+
+  // Update file object for downstream controllers
+  file.path = newPath;
+  file.filename = newFilename;
+  file.mimetype = 'image/webp';
+  file.size = fs.statSync(newPath).size;
+};
+
+export const optimizeUploadedImages = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const promises: Promise<void>[] = [];
+
+    if (req.file) {
+      promises.push(processImage(req.file));
+    } else if (req.files) {
+      if (Array.isArray(req.files)) {
+        for (const file of req.files) {
+          promises.push(processImage(file));
+        }
+      } else {
+        for (const field in req.files) {
+          for (const file of req.files[field]) {
+            promises.push(processImage(file));
+          }
+        }
+      }
+    }
+
+    await Promise.all(promises);
+    next();
+  } catch (error) {
+    next(error);
   }
+};
+
+const wrapUpload = (multerInstance: multer.Multer) => ({
+  single: (fieldName: string) => [
+    multerInstance.single(fieldName),
+    optimizeUploadedImages
+  ],
+  array: (fieldName: string, maxCount?: number) => [
+    multerInstance.array(fieldName, maxCount),
+    optimizeUploadedImages
+  ],
+  fields: (fields: multer.Field[]) => [
+    multerInstance.fields(fields),
+    optimizeUploadedImages
+  ]
 });
 
-export const categoryImageUpload = createImageUploadMiddleware('categories');
-export const subCategoryImageUpload = createImageUploadMiddleware('subCategories');
-export const bannerImageUpload = createImageUploadMiddleware('banners');
-export const richTextImageUpload = createImageUploadMiddleware('richText');
-export const youtubeVideoImageUpload = createImageUploadMiddleware('youtubeVideos');
+export const productMediaUpload = wrapUpload(
+  multer({
+    storage: productMediaStorage,
+    fileFilter: productMediaFileFilter,
+    limits: {
+      fileSize: MAX_PRODUCT_UPLOAD_SIZE_IN_MB * 1024 * 1024
+    }
+  })
+);
+
+export const categoryImageUpload = wrapUpload(createImageUploadMiddleware('categories'));
+export const subCategoryImageUpload = wrapUpload(
+  createImageUploadMiddleware('subCategories')
+);
+export const bannerImageUpload = wrapUpload(createImageUploadMiddleware('banners'));
+export const richTextImageUpload = wrapUpload(createImageUploadMiddleware('richText'));
+export const youtubeVideoImageUpload = wrapUpload(
+  createImageUploadMiddleware('youtubeVideos')
+);
