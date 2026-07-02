@@ -36,7 +36,8 @@ const bannerSelect = {
   category: {
     select: {
       id: true,
-      title: true
+      title: true,
+      slug: true
     }
   },
   createdAt: true,
