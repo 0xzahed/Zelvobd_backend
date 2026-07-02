@@ -143,9 +143,10 @@ const getProductSelect = (now: Date = new Date()) => ({
     }
   },
   variants: {
-    orderBy: {
-      createdAt: 'asc' as const
-    },
+    orderBy: [
+      { createdAt: 'asc' as const },
+      { id: 'asc' as const }
+    ],
     select: {
       id: true,
       actualPrice: true,
@@ -206,9 +207,10 @@ export const getProductCardSelect = (now: Date = new Date()) => ({
     }
   },
   variants: {
-    orderBy: {
-      createdAt: 'asc' as const
-    },
+    orderBy: [
+      { createdAt: 'asc' as const },
+      { id: 'asc' as const }
+    ],
     take: 1,
     select: {
       id: true,
