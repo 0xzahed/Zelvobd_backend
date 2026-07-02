@@ -37,12 +37,12 @@ const checkFraudStatus = async (phone: string) => {
     }
 
     return data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof ApiError) throw error;
     
     throw new ApiError(
       StatusCodes.INTERNAL_SERVER_ERROR,
-      error.message || 'Failed to connect to Steadfast Courier API'
+      error instanceof Error ? error.message : 'Failed to connect to Steadfast Courier API'
     );
   }
 };
@@ -61,12 +61,12 @@ const checkDeliveryStatus = async (invoice: string) => {
     }
 
     return data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof ApiError) throw error;
     
     throw new ApiError(
       StatusCodes.INTERNAL_SERVER_ERROR,
-      error.message || 'Failed to fetch delivery status from Steadfast'
+      error instanceof Error ? error.message : 'Failed to fetch delivery status from Steadfast'
     );
   }
 };
@@ -95,7 +95,7 @@ const syncOrders = async (orderIds: string[]) => {
   const results = {
     success: 0,
     failed: 0,
-    errors: [] as any[]
+    errors: [] as { invoice: string; error: unknown }[]
   };
 
   const headers = getSteadfastHeaders();
@@ -134,9 +134,9 @@ const syncOrders = async (orderIds: string[]) => {
         results.failed = 1;
         results.errors.push({ invoice: order.code, error: data });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       results.failed = 1;
-      results.errors.push({ invoice: order.code, error: err.message });
+      results.errors.push({ invoice: order.code, error: err instanceof Error ? err.message : 'Unknown error' });
     }
   } 
   // 4. Bulk Create Logic
@@ -160,7 +160,7 @@ const syncOrders = async (orderIds: string[]) => {
 
       if (response.ok && data.status === 200 && Array.isArray(data.data)) {
         // Update database for successfully created items
-        const updatePromises = data.data.map(async (item: any) => {
+        const updatePromises = data.data.map(async (item: { status: string; consignment_id?: number; invoice: string; tracking_code?: string }) => {
           if (item.status === 'success' && item.consignment_id) {
             results.success += 1;
             // Map Steadfast invoice back to local order code to find the ID
@@ -184,8 +184,8 @@ const syncOrders = async (orderIds: string[]) => {
       } else {
         throw new Error('Bulk API response was invalid');
       }
-    } catch (err: any) {
-      throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, `Bulk Create Failed: ${err.message}`);
+    } catch (err: unknown) {
+      throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, `Bulk Create Failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   }
 
