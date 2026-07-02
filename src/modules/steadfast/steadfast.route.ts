@@ -8,4 +8,5 @@ export const steadfastRouter = Router();
 steadfastRouter.use(requireAdminAuth);
 
 steadfastRouter.get('/fraud-check/:phone', steadfastController.checkFraudStatus);
+steadfastRouter.get('/status/:invoice', steadfastController.checkDeliveryStatus);
 steadfastRouter.post('/sync-orders', steadfastController.syncOrders);

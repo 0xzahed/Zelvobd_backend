@@ -42,7 +42,23 @@ export const syncOrders = async (req: Request, res: Response, next: NextFunction
   }
 };
 
+export const checkDeliveryStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const invoice = req.params.invoice as string;
+    const data = await steadfastService.checkDeliveryStatus(invoice);
+
+    sendResponse(req, res, {
+      statusCode: StatusCodes.OK,
+      message: 'Delivery status fetched successfully',
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const steadfastController = {
   checkFraudStatus,
   syncOrders,
+  checkDeliveryStatus,
 };

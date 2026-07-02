@@ -47,6 +47,30 @@ const checkFraudStatus = async (phone: string) => {
   }
 };
 
+const checkDeliveryStatus = async (invoice: string) => {
+  try {
+    const response = await fetch(`${STEADFAST_BASE_URL}/status_by_invoice/${invoice}`, {
+      method: 'GET',
+      headers: getSteadfastHeaders(),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch delivery status from Steadfast');
+    }
+
+    return data;
+  } catch (error: any) {
+    if (error instanceof ApiError) throw error;
+    
+    throw new ApiError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      error.message || 'Failed to fetch delivery status from Steadfast'
+    );
+  }
+};
+
 const syncOrders = async (orderIds: string[]) => {
   if (!orderIds || orderIds.length === 0) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'No orders selected');
@@ -83,8 +107,9 @@ const syncOrders = async (orderIds: string[]) => {
       invoice: order.code,
       recipient_name: order.customerName,
       recipient_phone: order.customerPhone,
-      recipient_address: `${order.address}, ${order.district}`,
-      cod_amount: Number(order.total)
+      recipient_address: order.address,
+      cod_amount: Number(order.total),
+      note: order.orderNotes || ''
     };
 
     try {
@@ -120,8 +145,9 @@ const syncOrders = async (orderIds: string[]) => {
       invoice: order.code,
       recipient_name: order.customerName,
       recipient_phone: order.customerPhone,
-      recipient_address: `${order.address}, ${order.district}`,
-      cod_amount: Number(order.total)
+      recipient_address: order.address,
+      cod_amount: Number(order.total),
+      note: order.orderNotes || ''
     }));
 
     try {
@@ -168,5 +194,6 @@ const syncOrders = async (orderIds: string[]) => {
 
 export const steadfastService = {
   checkFraudStatus,
-  syncOrders
+  syncOrders,
+  checkDeliveryStatus
 };
