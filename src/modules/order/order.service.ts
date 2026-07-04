@@ -113,6 +113,7 @@ const checkout = async (payload: CheckoutPayload) => {
 
   let allItemsFree = true;
   let totalWeight = 0;
+  let totalPaidDeliveryQuantity = 0;
 
   for (const item of items) {
     const product = products.find(p => p.id === item.productId);
@@ -127,14 +128,20 @@ const checkout = async (payload: CheckoutPayload) => {
     if (!isFree) {
       allItemsFree = false;
       totalWeight += (parseFloat(product.weight) || 0) * item.quantity;
+      totalPaidDeliveryQuantity += item.quantity;
     }
   }
 
   let shippingCharge = 0;
   if (!allItemsFree) {
     const baseCharge = payload.district === 'Inside Dhaka' ? 100 : 150;
-    const extraWeight = Math.max(0, totalWeight - 1);
-    const extraCharge = extraWeight * 20;
+    
+    let extraCharge = 0;
+    if (totalPaidDeliveryQuantity > 1) {
+      const extraWeight = Math.max(0, totalWeight - 1);
+      extraCharge = extraWeight * 20;
+    }
+    
     shippingCharge = baseCharge + extraCharge;
   }
 
