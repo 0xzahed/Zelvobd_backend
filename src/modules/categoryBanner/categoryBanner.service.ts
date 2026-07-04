@@ -39,7 +39,7 @@ export const createCategoryBanner = async (
     throw new ApiError(StatusCodes.NOT_FOUND, 'Category not found');
   }
 
-  const relativeUrl = `/uploads/categoryBanners/${file.filename}`;
+  const relativeUrl = `/upload/categoryBanners/${file.filename}`;
 
   const banner = await prisma.categoryBanner.create({
     data: {
@@ -90,7 +90,7 @@ export const updateCategoryBanner = async (
   };
 
   if (file) {
-    const relativeUrl = `/uploads/categoryBanners/${file.filename}`;
+    const relativeUrl = `/upload/categoryBanners/${file.filename}`;
     updateData.imagePath = file.path;
     updateData.imageUrl = relativeUrl;
 
