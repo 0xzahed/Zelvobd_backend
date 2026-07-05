@@ -2,6 +2,7 @@ import { StatusCodes } from 'http-status-codes';
 import { Prisma, OrderStatus } from '@prisma/client';
 import { ApiError } from '../../core/errors/ApiError.js';
 import { prisma } from '../../lib/prisma.js';
+import { freeDeliveryService } from '../freeDelivery/freeDelivery.service.js';
 
 type OrderItemInput = {
   productId: string;
@@ -110,7 +111,40 @@ const checkout = async (payload: CheckoutPayload) => {
     });
   }
 
-  const shippingCharge = 15; 
+  let allItemsFree = true;
+  let totalWeight = 0;
+  let totalPaidDeliveryQuantity = 0;
+
+  for (const item of items) {
+    const product = products.find(p => p.id === item.productId);
+    if (!product) continue;
+
+    const isFree = await freeDeliveryService.resolveFreeDeliveryForProduct({
+      productId: product.id,
+      categoryId: product.categoryId,
+      subCategoryId: product.subCategoryId
+    });
+
+    if (!isFree) {
+      allItemsFree = false;
+      totalWeight += (parseFloat(product.weight) || 0) * item.quantity;
+      totalPaidDeliveryQuantity += item.quantity;
+    }
+  }
+
+  let shippingCharge = 0;
+  if (!allItemsFree) {
+    const baseCharge = payload.district === 'Inside Dhaka' ? 100 : 150;
+    
+    let extraCharge = 0;
+    if (totalPaidDeliveryQuantity > 1) {
+      const extraWeight = Math.max(0, totalWeight - 1);
+      extraCharge = extraWeight * 20;
+    }
+    
+    shippingCharge = baseCharge + extraCharge;
+  }
+
   let discountAmount = 0;
   let validPromoCode: string | null = null;
 

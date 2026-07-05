@@ -31,7 +31,16 @@ const categoryPublicSelect = {
   slug: true,
   imageUrl: true,
   createdAt: true,
-  updatedAt: true
+  updatedAt: true,
+  subCategories: {
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      imageUrl: true,
+      categoryId: true,
+    }
+  }
 } as const;
 
 const normalizePrismaError = (error: unknown): never => {

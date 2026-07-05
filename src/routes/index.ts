@@ -16,6 +16,8 @@ import { trendingRouter } from '../modules/trending/trending.route.js';
 import { uploadRouter } from '../modules/upload/upload.route.js';
 import { promoRouter } from '../modules/promo/promo.route.js';
 import { orderRouter } from '../modules/order/order.route.js';
+import { categoryBannerRouter } from '../modules/categoryBanner/categoryBanner.route.js';
+import { steadfastRouter } from '../modules/steadfast/steadfast.route.js';
 
 export const router = Router();
 
@@ -34,4 +36,5 @@ router.use('/trending', trendingRouter);
 router.use('/uploads', uploadRouter);
 router.use('/promos', promoRouter);
 router.use('/orders', orderRouter);
-
+router.use('/category-banners', categoryBannerRouter);
+router.use('/steadfast', steadfastRouter);
