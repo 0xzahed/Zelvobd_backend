@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const createLandingPageSchema = z.object({
   body: z.object({
-    slug: z.string({ required_error: 'Slug is required' }),
+    slug: z.string().min(1, 'Slug is required'),
     colorPalette: z.string().optional(),
     productId: z.string().optional(),
     heroSection: z.any().optional(),

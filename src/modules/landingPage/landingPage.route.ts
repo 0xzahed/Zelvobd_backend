@@ -1,28 +1,31 @@
-import express from 'express';
-import { validateRequest } from '../../middlewares/validateRequest.js';
+import { Router } from 'express';
+import { requireAdminAuth } from '../../middlewares/requireAdminAuth.js';
 import { LandingPageController } from './landingPage.controller.js';
-import { LandingPageValidation } from './landingPage.validation.js';
 
-const router = express.Router();
+const router = Router();
 
+// Public read
+router.get('/', LandingPageController.getAllLandingPages);
+router.get('/slug/:slug', LandingPageController.getLandingPageBySlug);
+router.get('/:id', LandingPageController.getLandingPageById);
+
+// Admin write
 router.post(
   '/',
-  validateRequest(LandingPageValidation.createLandingPageSchema),
+  requireAdminAuth,
   LandingPageController.createLandingPage
 );
 
-router.get('/', LandingPageController.getAllLandingPages);
-
-router.get('/slug/:slug', LandingPageController.getLandingPageBySlug);
-
-router.get('/:id', LandingPageController.getLandingPageById);
-
 router.patch(
   '/:id',
-  validateRequest(LandingPageValidation.updateLandingPageSchema),
+  requireAdminAuth,
   LandingPageController.updateLandingPage
 );
 
-router.delete('/:id', LandingPageController.deleteLandingPage);
+router.delete(
+  '/:id',
+  requireAdminAuth,
+  LandingPageController.deleteLandingPage
+);
 
 export const landingPageRouter = router;

@@ -1,8 +1,7 @@
 import { PrismaClient, LandingPage } from '@prisma/client';
-import ApiError from '../../core/errors/ApiError.js';
+import { ApiError } from '../../core/errors/ApiError.js';
 import { StatusCodes } from 'http-status-codes';
-
-const prisma = new PrismaClient();
+import { prisma } from '../../lib/prisma.js';
 
 const createLandingPage = async (payload: Partial<LandingPage>): Promise<LandingPage> => {
   const count = await prisma.landingPage.count();
