@@ -128,6 +128,7 @@ model Product {
   trendingCampaignItems     TrendingCampaignProduct[]
   trendingExclusions        TrendingCampaignExcludedProduct[]
   orderItems                OrderItem[]
+  landingPages              LandingPage[]
 
   @@index([categoryId])
   @@index([subCategoryId])
@@ -448,9 +449,25 @@ model Order {
 }
 
 model OrderItem {
+<<<<<<< HEAD
   id        String @id @default(cuid())
   orderId   String
   productId String
+=======
+  id              String      @id @default(cuid())
+  orderId         String
+  productId       String?
+  
+  productName     String
+  productImage    String?
+  price           Decimal     @db.Decimal(10, 2)
+  quantity        Int
+  color           String?
+  size            String?
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+>>>>>>> 3a8cc151a9247ed85f0dc1118766b30985ebda29
 
   productName  String
   productImage String?
@@ -494,4 +511,29 @@ model CategoryBanner {
 
   @@index([categoryId])
   @@map("category_banners")
+}
+
+model LandingPage {
+  id                  String   @id @default(cuid())
+  slug                String   @unique
+  colorPalette        String   @default("blue")
+  
+  heroSection         Json?
+  tableSection        Json?
+  featureCards        Json?
+  timerSection        Json?
+  videoSection        Json?
+  bulletPointsSection Json?
+  tipsSection         Json?
+  checkoutSection     Json?
+  faqSection          Json?
+  whatsappSection     Json?
+
+  productId           String?
+  product             Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("landing_pages")
 }

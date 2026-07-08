@@ -6,6 +6,7 @@ export const orderRouter = Router();
 
 // Public checkout endpoint
 orderRouter.post('/checkout', orderController.checkout);
+orderRouter.post('/checkout-landing-page', orderController.checkoutLandingPage);
 
 // Admin endpoints
 orderRouter.use(requireAdminAuth);

@@ -19,6 +19,7 @@ import { orderRouter } from '../modules/order/order.route.js';
 import { categoryBannerRouter } from '../modules/categoryBanner/categoryBanner.route.js';
 import { steadfastRouter } from '../modules/steadfast/steadfast.route.js';
 import { footerRouter } from '../modules/footer/footer.route.js';
+import { landingPageRouter } from '../modules/landingPage/landingPage.route.js';
 
 export const router = Router();
 
@@ -40,3 +41,4 @@ router.use('/orders', orderRouter);
 router.use('/category-banners', categoryBannerRouter);
 router.use('/steadfast', steadfastRouter);
 router.use('/footer', footerRouter);
+router.use('/landing-pages', landingPageRouter);
