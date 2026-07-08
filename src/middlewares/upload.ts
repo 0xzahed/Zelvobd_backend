@@ -224,3 +224,4 @@ export const youtubeVideoImageUpload = wrapUpload(
   createImageUploadMiddleware('youtubeVideos')
 );
 export const categoryBannerImageUpload = wrapUpload(createImageUploadMiddleware('categoryBanners'));
+export const adminImageUpload = wrapUpload(createImageUploadMiddleware('admin'));

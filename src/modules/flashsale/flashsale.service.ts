@@ -9,6 +9,7 @@ import {
   GetAllActiveFlashSaleProductsQueryInput,
   GetActiveFlashSaleProductsQueryInput,
   GetFlashSaleCampaignListQueryInput,
+  UpdateFlashSaleCampaignInput,
   UpdateFlashSaleCampaignProductsInput,
   UpdateFlashSaleCampaignTimeInput
 } from './flashsale.validation.js';
@@ -22,6 +23,7 @@ const flashSaleCampaignSummarySelect = {
   endAt: true,
   discountType: true,
   discountValue: true,
+  bannerUrl: true,
   createdAt: true,
   updatedAt: true,
   _count: {
@@ -99,6 +101,7 @@ const mapCampaignSummary = (
     endAt: Date;
     discountType: FlashSaleDiscountType;
     discountValue: { toString(): string } | number;
+    bannerUrl: string | null;
     createdAt: Date;
     updatedAt: Date;
     _count: { products: number };
@@ -112,6 +115,7 @@ const mapCampaignSummary = (
     endAt: campaign.endAt,
     discountType: campaign.discountType,
     discountValue: toNumber(campaign.discountValue),
+    bannerUrl: campaign.bannerUrl,
     status: getFlashSaleCampaignStatus(campaign.startAt, campaign.endAt, now),
     productCount: campaign._count.products,
     createdAt: campaign.createdAt,
@@ -301,6 +305,7 @@ const createFlashSaleCampaign = async (payload: CreateFlashSaleCampaignInput) =>
       endAt: payload.endAt,
       discountType: payload.discountType,
       discountValue: payload.discountValue,
+      ...(payload.bannerUrl ? { bannerUrl: payload.bannerUrl } : {}),
       products: {
         create: productIds.map((productId) => ({
           productId
@@ -392,6 +397,34 @@ const updateFlashSaleCampaignTime = async (id: string, payload: UpdateFlashSaleC
       ...(payload.startAt ? { startAt: payload.startAt } : {}),
       ...(payload.endAt ? { endAt: payload.endAt } : {})
     },
+    select: flashSaleCampaignSummarySelect
+  });
+
+  return mapCampaignSummary(updatedCampaign);
+};
+
+const updateFlashSaleCampaign = async (id: string, payload: UpdateFlashSaleCampaignInput) => {
+  const existingCampaign = await prisma.flashSaleCampaign.findUnique({
+    where: { id },
+    select: { id: true }
+  });
+
+  if (!existingCampaign) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Flash sale campaign not found');
+  }
+
+  const updateData: Record<string, unknown> = {};
+
+  if (payload.title !== undefined) updateData.title = payload.title;
+  if (payload.startAt !== undefined) updateData.startAt = payload.startAt;
+  if (payload.endAt !== undefined) updateData.endAt = payload.endAt;
+  if (payload.discountType !== undefined) updateData.discountType = payload.discountType;
+  if (payload.discountValue !== undefined) updateData.discountValue = payload.discountValue;
+  if (payload.bannerUrl !== undefined) updateData.bannerUrl = payload.bannerUrl;
+
+  const updatedCampaign = await prisma.flashSaleCampaign.update({
+    where: { id },
+    data: updateData,
     select: flashSaleCampaignSummarySelect
   });
 
@@ -690,6 +723,7 @@ export const flashSaleService = {
   createFlashSaleCampaign,
   getFlashSaleCampaignList,
   getSingleFlashSaleCampaign,
+  updateFlashSaleCampaign,
   updateFlashSaleCampaignTime,
   updateFlashSaleCampaignProducts,
   deleteFlashSaleCampaign,

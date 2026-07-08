@@ -274,6 +274,7 @@ model FlashSaleCampaign {
   endAt         DateTime
   discountType  FlashSaleDiscountType
   discountValue Decimal               @db.Decimal(10, 2)
+  bannerUrl     String?
   products      FlashSaleProduct[]
   createdAt     DateTime              @default(now())
   updatedAt     DateTime              @updatedAt
@@ -384,18 +385,18 @@ enum PromoDiscountType {
 }
 
 model PromoCode {
-  id             String            @id @default(cuid())
-  code           String            @unique
-  discountType   PromoDiscountType
-  discountValue  Decimal           @db.Decimal(10, 2)
-  minOrderValue  Decimal?          @db.Decimal(10, 2)
-  maxDiscount    Decimal?          @db.Decimal(10, 2)
-  startDate      DateTime?
-  endDate        DateTime?
-  isActive       Boolean           @default(true)
-  usageCount     Int               @default(0)
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  id            String            @id @default(cuid())
+  code          String            @unique
+  discountType  PromoDiscountType
+  discountValue Decimal           @db.Decimal(10, 2)
+  minOrderValue Decimal?          @db.Decimal(10, 2)
+  maxDiscount   Decimal?          @db.Decimal(10, 2)
+  startDate     DateTime?
+  endDate       DateTime?
+  isActive      Boolean           @default(true)
+  usageCount    Int               @default(0)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
   @@index([code])
   @@index([isActive])
@@ -414,31 +415,31 @@ enum OrderStatus {
 }
 
 model Order {
-  id              String      @id @default(cuid())
-  code            String      @unique
-  
-  customerName    String
-  customerPhone   String
-  address         String
-  district        String
-  union           String?
-  orderNotes      String?     @db.Text
+  id   String @id @default(cuid())
+  code String @unique
 
-  subtotal        Decimal     @db.Decimal(10, 2)
-  shippingCharge  Decimal     @db.Decimal(10, 2)
-  discountAmount  Decimal     @db.Decimal(10, 2) @default(0)
-  total           Decimal     @db.Decimal(10, 2)
-  
-  promoCode       String?
-  consignmentId   String?
-  trackingCode    String?
+  customerName  String
+  customerPhone String
+  address       String
+  district      String
+  union         String?
+  orderNotes    String? @db.Text
 
-  status          OrderStatus @default(PENDING)
-  
-  items           OrderItem[]
+  subtotal       Decimal @db.Decimal(10, 2)
+  shippingCharge Decimal @db.Decimal(10, 2)
+  discountAmount Decimal @default(0) @db.Decimal(10, 2)
+  total          Decimal @db.Decimal(10, 2)
 
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  promoCode     String?
+  consignmentId String?
+  trackingCode  String?
+
+  status OrderStatus @default(PENDING)
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([code])
   @@index([status])
@@ -447,26 +448,35 @@ model Order {
 }
 
 model OrderItem {
-  id              String      @id @default(cuid())
-  orderId         String
-  productId       String
-  
-  productName     String
-  productImage    String?
-  price           Decimal     @db.Decimal(10, 2)
-  quantity        Int
-  color           String?
-  size            String?
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id        String @id @default(cuid())
+  orderId   String
+  productId String
 
-  order           Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product         Product?    @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName  String
+  productImage String?
+  price        Decimal @db.Decimal(10, 2)
+  quantity     Int
+  color        String?
+  size         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
   @@index([productId])
   @@map("order_items")
+}
+
+model FooterConfig {
+  id        String   @id @default("main")
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("footer_config")
 }
 
 model CategoryBanner {

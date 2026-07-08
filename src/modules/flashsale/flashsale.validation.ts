@@ -22,6 +22,7 @@ export const createFlashSaleCampaignSchema = z
     endAt: bangladeshDateTimeSchema,
     discountType: z.enum(FLASH_SALE_DISCOUNT_TYPES),
     discountValue: z.coerce.number().positive('Discount value must be greater than 0'),
+    bannerUrl: z.string().optional(),
     productIds: productIdsSchema.optional().default([])
   })
   .superRefine((value, context) => {
@@ -83,6 +84,15 @@ export const updateFlashSaleCampaignTimeSchema = z
     }
   });
 
+export const updateFlashSaleCampaignSchema = z.object({
+  title: z.string().trim().min(1, 'Campaign title is required').max(220, 'Campaign title is too long').optional(),
+  startAt: bangladeshDateTimeSchema.optional(),
+  endAt: bangladeshDateTimeSchema.optional(),
+  discountType: z.enum(FLASH_SALE_DISCOUNT_TYPES).optional(),
+  discountValue: z.coerce.number().positive('Discount value must be greater than 0').optional(),
+  bannerUrl: z.string().optional(),
+});
+
 export const updateFlashSaleCampaignProductsSchema = z
   .object({
     addProductIds: productIdsSchema.optional(),
@@ -131,6 +141,8 @@ export const getAllActiveFlashSaleProductsQuerySchema = z.object({
 export type CreateFlashSaleCampaignInput = z.infer<typeof createFlashSaleCampaignSchema>;
 export type GetFlashSaleCampaignListQueryInput = z.infer<typeof getFlashSaleCampaignListQuerySchema>;
 export type UpdateFlashSaleCampaignTimeInput = z.infer<typeof updateFlashSaleCampaignTimeSchema>;
+export type UpdateFlashSaleCampaignInput = z.infer<typeof updateFlashSaleCampaignSchema>;
+
 export type UpdateFlashSaleCampaignProductsInput = z.infer<
   typeof updateFlashSaleCampaignProductsSchema
 >;

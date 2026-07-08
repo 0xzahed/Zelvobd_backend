@@ -11,6 +11,7 @@ import {
   getAllActiveFlashSaleProductsQuerySchema,
   getActiveFlashSaleProductsQuerySchema,
   getFlashSaleCampaignListQuerySchema,
+  updateFlashSaleCampaignSchema,
   updateFlashSaleCampaignProductsSchema,
   updateFlashSaleCampaignTimeSchema
 } from './flashsale.validation.js';
@@ -72,6 +73,25 @@ const getSingleFlashSaleCampaign = catchAsync(async (req, res) => {
   sendResponse(req, res, {
     statusCode: StatusCodes.OK,
     message: 'Flash sale campaign fetched successfully',
+    data: campaign
+  });
+});
+
+const updateFlashSaleCampaign = catchAsync(async (req, res) => {
+  const parsedBody = updateFlashSaleCampaignSchema.safeParse(req.body);
+
+  if (!parsedBody.success) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, getValidationErrorMessage(parsedBody.error));
+  }
+
+  const campaign = await flashSaleService.updateFlashSaleCampaign(
+    getFlashSaleCampaignIdFromParams(req),
+    parsedBody.data
+  );
+
+  sendResponse(req, res, {
+    statusCode: StatusCodes.OK,
+    message: 'Flash sale campaign updated successfully',
     data: campaign
   });
 });
@@ -179,6 +199,7 @@ export const flashSaleController = {
   createFlashSaleCampaign,
   getFlashSaleCampaignList,
   getSingleFlashSaleCampaign,
+  updateFlashSaleCampaign,
   updateFlashSaleCampaignTime,
   updateFlashSaleCampaignProducts,
   deleteFlashSaleCampaign,
