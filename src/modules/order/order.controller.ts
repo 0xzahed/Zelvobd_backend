@@ -9,7 +9,8 @@ import { orderService } from './order.service.js';
 import {
   checkoutSchema,
   getOrdersQuerySchema,
-  updateOrderStatusSchema
+  updateOrderStatusSchema,
+  landingPageCheckoutSchema
 } from './order.validation.js';
 
 const getValidationErrorMessage = (error: z.ZodError): string => {
@@ -36,6 +37,22 @@ const checkout = catchAsync(async (req, res) => {
   sendResponse(req, res, {
     statusCode: StatusCodes.CREATED,
     message: 'Order placed successfully',
+    data: order
+  });
+});
+
+const checkoutLandingPage = catchAsync(async (req, res) => {
+  const parsedBody = landingPageCheckoutSchema.safeParse(req.body);
+
+  if (!parsedBody.success) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, getValidationErrorMessage(parsedBody.error));
+  }
+
+  const order = await orderService.checkoutLandingPage(parsedBody.data);
+
+  sendResponse(req, res, {
+    statusCode: StatusCodes.CREATED,
+    message: 'Landing page order placed successfully',
     data: order
   });
 });
@@ -100,6 +117,7 @@ const deleteOrder = catchAsync(async (req, res) => {
 
 export const orderController = {
   checkout,
+  checkoutLandingPage,
   getOrders,
   getSingleOrder,
   updateOrderStatus,

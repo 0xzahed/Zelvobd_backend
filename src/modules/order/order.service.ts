@@ -225,6 +225,73 @@ const checkout = async (payload: CheckoutPayload) => {
   return order;
 };
 
+const checkoutLandingPage = async (payload: { customerName: string; customerPhone: string; address: string; district?: string | null; landingPageId: string }) => {
+  const landingPage = await prisma.landingPage.findUnique({
+    where: { id: payload.landingPageId }
+  });
+
+  if (!landingPage) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Landing page not found');
+  }
+
+  const checkoutSection = landingPage.checkoutSection as any;
+  if (!checkoutSection || !checkoutSection.price) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid landing page configuration');
+  }
+
+  const price = Number(checkoutSection.price);
+  const productName = checkoutSection.productName || 'Landing Page Product';
+
+  return prisma.$transaction(async (tx) => {
+    // Generate order code (Z-YYMMDD-XXXX)
+    const today = new Date();
+    const datePrefix = `Z-${today.getFullYear().toString().slice(2)}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}`;
+    
+    const lastOrder = await tx.order.findFirst({
+      where: { code: { startsWith: datePrefix } },
+      orderBy: { code: 'desc' }
+    });
+    
+    let sequenceNumber = 1;
+    if (lastOrder && lastOrder.code) {
+      const lastSequence = parseInt(lastOrder.code.split('-')[2] || '0', 10);
+      if (!isNaN(lastSequence)) {
+         sequenceNumber = lastSequence + 1;
+      }
+    }
+    const orderCode = `${datePrefix}-${sequenceNumber.toString().padStart(4, '0')}`;
+
+    // Create Order
+    const order = await tx.order.create({
+      data: {
+        code: orderCode,
+        customerName: payload.customerName,
+        customerPhone: payload.customerPhone,
+        address: payload.address,
+        district: payload.district || 'N/A',
+        union: null,
+        orderNotes: 'Ordered via Landing Page Funnel',
+        subtotal: price,
+        shippingCharge: 0,
+        discountAmount: 0,
+        total: price,
+        status: 'PENDING',
+        items: {
+          create: [{
+            productId: landingPage.productId || undefined,
+            productName: productName,
+            price: price,
+            quantity: 1,
+          }]
+        }
+      },
+      include: { items: true }
+    });
+
+    return order;
+  });
+};
+
 const getOrders = async (params: GetOrdersQueryInput) => {
   const { page, limit, search, status } = params;
   const skip = (page - 1) * limit;
@@ -302,5 +369,6 @@ export const orderService = {
   getOrders,
   getSingleOrder,
   updateOrderStatus,
-  deleteOrder
+  deleteOrder,
+  checkoutLandingPage
 };

@@ -18,6 +18,14 @@ export const checkoutSchema = z.object({
   promoCode: z.string().trim().nullable().optional(),
 });
 
+export const landingPageCheckoutSchema = z.object({
+  customerName: z.string().trim().min(1, 'Name is required'),
+  customerPhone: z.string().trim().min(1, 'Phone is required'),
+  address: z.string().trim().min(1, 'Address is required'),
+  district: z.string().trim().nullable().optional(),
+  landingPageId: z.string().trim().min(1, 'Landing page ID is required'),
+});
+
 export const updateOrderStatusSchema = z.object({
   status: z.enum([
     'PENDING', 'PROCESSING', 'HOLD', 'PICKUP', 'DELIVERED', 'CUSTOMER_CANCELLED', 'CANCELLED', 'TRASH'

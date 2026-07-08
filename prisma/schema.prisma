@@ -450,7 +450,7 @@ model Order {
 model OrderItem {
   id              String      @id @default(cuid())
   orderId         String
-  productId       String
+  productId       String?
   
   productName     String
   productImage    String?
