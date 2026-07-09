@@ -284,7 +284,7 @@ const checkoutLandingPage = async (payload: { customerName: string; customerPhon
         status: 'PENDING',
         items: {
           create: [{
-            productId: landingPage.productId || landingPage.id, // Fallback to landing page ID if no product linked
+            productId: landingPage.productId || undefined,
             productName: productName,
             price: price,
             quantity: quantity,
