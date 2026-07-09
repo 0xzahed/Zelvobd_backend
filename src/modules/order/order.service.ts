@@ -225,7 +225,7 @@ const checkout = async (payload: CheckoutPayload) => {
   return order;
 };
 
-const checkoutLandingPage = async (payload: { customerName: string; customerPhone: string; address: string; district?: string | null; landingPageId: string }) => {
+const checkoutLandingPage = async (payload: { customerName: string; customerPhone: string; address: string; district?: string | null; landingPageId: string; quantity: number; price: number }) => {
   const landingPage = await prisma.landingPage.findUnique({
     where: { id: payload.landingPageId }
   });
@@ -235,11 +235,17 @@ const checkoutLandingPage = async (payload: { customerName: string; customerPhon
   }
 
   const checkoutSection = landingPage.checkoutSection as any;
-  if (!checkoutSection || !checkoutSection.price) {
+  const heroSection = landingPage.heroSection as any;
+  
+  if (!checkoutSection || !heroSection || !heroSection.offerPrice) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid landing page configuration');
   }
 
-  const price = Number(checkoutSection.price);
+  // Use the offer price from the hero section
+  const price = Number(heroSection.offerPrice) || payload.price;
+  const quantity = payload.quantity || 1;
+  const subtotal = price * quantity;
+  
   const productName = checkoutSection.productName || 'Landing Page Product';
 
   return prisma.$transaction(async (tx) => {
@@ -271,17 +277,17 @@ const checkoutLandingPage = async (payload: { customerName: string; customerPhon
         district: payload.district || 'N/A',
         union: null,
         orderNotes: 'Ordered via Landing Page Funnel',
-        subtotal: price,
+        subtotal: subtotal,
         shippingCharge: 0,
         discountAmount: 0,
-        total: price,
+        total: subtotal,
         status: 'PENDING',
         items: {
           create: [{
-            productId: landingPage.productId || undefined,
+            productId: landingPage.productId || landingPage.id, // Fallback to landing page ID if no product linked
             productName: productName,
             price: price,
-            quantity: 1,
+            quantity: quantity,
           }]
         }
       },

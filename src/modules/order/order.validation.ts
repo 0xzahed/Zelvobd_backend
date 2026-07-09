@@ -24,6 +24,8 @@ export const landingPageCheckoutSchema = z.object({
   address: z.string().trim().min(1, 'Address is required'),
   district: z.string().trim().nullable().optional(),
   landingPageId: z.string().trim().min(1, 'Landing page ID is required'),
+  quantity: z.number().int().positive().default(1),
+  price: z.number().positive(),
 });
 
 export const updateOrderStatusSchema = z.object({
