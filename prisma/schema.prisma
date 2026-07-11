@@ -506,6 +506,7 @@ model LandingPage {
   tableSection        Json?
   featureCards        Json?
   timerSection        Json?
+  sliderSection       Json?
   videoSection        Json?
   bulletPointsSection Json?
   tipsSection         Json?
