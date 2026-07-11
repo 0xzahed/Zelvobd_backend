@@ -22,6 +22,25 @@ const uploadRichTextImage = catchAsync(async (req: Request, res) => {
   });
 });
 
+const uploadImage = catchAsync(async (req: Request, res) => {
+  const uploadedFile = req.file;
+
+  if (!uploadedFile) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Image file is required');
+  }
+
+  const imageUrl = `/upload/admin/${uploadedFile.filename}`;
+
+  sendResponse(req, res, {
+    statusCode: StatusCodes.CREATED,
+    message: 'Image uploaded successfully',
+    data: {
+      url: imageUrl
+    }
+  });
+});
+
 export const uploadController = {
-  uploadRichTextImage
+  uploadRichTextImage,
+  uploadImage
 };
