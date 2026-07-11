@@ -449,25 +449,9 @@ model Order {
 }
 
 model OrderItem {
-<<<<<<< HEAD
   id        String @id @default(cuid())
   orderId   String
   productId String
-=======
-  id              String      @id @default(cuid())
-  orderId         String
-  productId       String?
-  
-  productName     String
-  productImage    String?
-  price           Decimal     @db.Decimal(10, 2)
-  quantity        Int
-  color           String?
-  size            String?
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
->>>>>>> 3a8cc151a9247ed85f0dc1118766b30985ebda29
 
   productName  String
   productImage String?
