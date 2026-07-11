@@ -14,6 +14,7 @@ flashSaleRouter.use(requireAdminAuth);
 flashSaleRouter.post('/', flashSaleController.createFlashSaleCampaign);
 flashSaleRouter.get('/', flashSaleController.getFlashSaleCampaignList);
 flashSaleRouter.get('/:id', flashSaleController.getSingleFlashSaleCampaign);
+flashSaleRouter.patch('/:id', flashSaleController.updateFlashSaleCampaign);
 flashSaleRouter.patch('/:id/time', flashSaleController.updateFlashSaleCampaignTime);
 flashSaleRouter.patch('/:id/products', flashSaleController.updateFlashSaleCampaignProducts);
 flashSaleRouter.delete('/:id', flashSaleController.deleteFlashSaleCampaign);
