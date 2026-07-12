@@ -498,10 +498,10 @@ model CategoryBanner {
 }
 
 model LandingPage {
-  id                  String   @id @default(cuid())
-  slug                String   @unique
-  colorPalette        String   @default("blue")
-  
+  id           String @id @default(cuid())
+  slug         String @unique
+  colorPalette String @default("blue")
+
   heroSection         Json?
   tableSection        Json?
   featureCards        Json?
@@ -514,11 +514,11 @@ model LandingPage {
   faqSection          Json?
   whatsappSection     Json?
 
-  productId           String?
-  product             Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
 
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("landing_pages")
 }
