@@ -39,6 +39,7 @@ const categoryPublicSelect = {
       slug: true,
       imageUrl: true,
       categoryId: true,
+      createdAt: true,
     }
   }
 } as const;

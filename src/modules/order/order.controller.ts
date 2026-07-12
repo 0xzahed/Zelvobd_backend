@@ -10,6 +10,7 @@ import {
   checkoutSchema,
   getOrdersQuerySchema,
   updateOrderStatusSchema,
+  updateOrderSchema,
   landingPageCheckoutSchema
 } from './order.validation.js';
 
@@ -104,6 +105,23 @@ const updateOrderStatus = catchAsync(async (req, res) => {
   });
 });
 
+const updateOrder = catchAsync(async (req, res) => {
+  const parsedBody = updateOrderSchema.safeParse(req.body);
+
+  if (!parsedBody.success) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, getValidationErrorMessage(parsedBody.error));
+  }
+
+  const orderId = getOrderIdFromParams(req);
+  const order = await orderService.updateOrder(orderId, parsedBody.data);
+
+  sendResponse(req, res, {
+    statusCode: StatusCodes.OK,
+    message: 'Order updated successfully',
+    data: order
+  });
+});
+
 const deleteOrder = catchAsync(async (req, res) => {
   const orderId = getOrderIdFromParams(req);
   await orderService.deleteOrder(orderId);
@@ -121,5 +139,6 @@ export const orderController = {
   getOrders,
   getSingleOrder,
   updateOrderStatus,
+  updateOrder,
   deleteOrder
 };

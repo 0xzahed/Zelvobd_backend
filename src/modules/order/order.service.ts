@@ -29,6 +29,30 @@ type GetOrdersQueryInput = {
   status?: OrderStatus;
 };
 
+type UpdateOrderItemInput = {
+  id?: string;
+  productId?: string;
+  productName: string;
+  productImage?: string | null;
+  price: number;
+  quantity: number;
+  color?: string | null;
+  size?: string | null;
+};
+
+type UpdateOrderPayload = {
+  customerName?: string;
+  customerPhone?: string;
+  address?: string;
+  district?: string;
+  union?: string | null;
+  orderNotes?: string | null;
+  items?: UpdateOrderItemInput[];
+  shippingCharge?: number;
+  discountAmount?: number;
+  promoCode?: string | null;
+};
+
 const roundToTwoDecimals = (value: number): number => {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 };
@@ -234,6 +258,10 @@ const checkoutLandingPage = async (payload: { customerName: string; customerPhon
     throw new ApiError(StatusCodes.NOT_FOUND, 'Landing page not found');
   }
 
+  if (!landingPage.productId) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Landing page has no linked product');
+  }
+
   const checkoutSection = landingPage.checkoutSection as any;
   const heroSection = landingPage.heroSection as any;
   
@@ -284,7 +312,7 @@ const checkoutLandingPage = async (payload: { customerName: string; customerPhon
         status: 'PENDING',
         items: {
           create: [{
-            productId: landingPage.productId || undefined,
+            productId: landingPage.productId!,
             productName: productName,
             price: price,
             quantity: quantity,
@@ -361,6 +389,60 @@ const updateOrderStatus = async (id: string, status: OrderStatus) => {
   });
 };
 
+const updateOrder = async (id: string, payload: UpdateOrderPayload) => {
+  const order = await prisma.order.findUnique({
+    where: { id },
+    include: { items: true }
+  });
+  if (!order) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Order not found');
+  }
+
+  const itemsData = payload.items?.map(item => ({
+    productId: item.productId || null,
+    productName: item.productName,
+    productImage: item.productImage || null,
+    price: roundToTwoDecimals(item.price),
+    quantity: item.quantity,
+    color: item.color || null,
+    size: item.size || null,
+  })) || [];
+
+  const subtotal = roundToTwoDecimals(
+    itemsData.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  );
+  const shippingCharge = payload.shippingCharge !== undefined
+    ? roundToTwoDecimals(payload.shippingCharge)
+    : Number(order.shippingCharge);
+  const discountAmount = payload.discountAmount !== undefined
+    ? roundToTwoDecimals(payload.discountAmount)
+    : Number(order.discountAmount);
+  const total = roundToTwoDecimals(Math.max(0, subtotal + shippingCharge - discountAmount));
+
+  return prisma.$transaction(async (tx) => {
+    await tx.orderItem.deleteMany({ where: { orderId: id } });
+
+    return tx.order.update({
+      where: { id },
+      data: {
+        customerName: payload.customerName ?? order.customerName,
+        customerPhone: payload.customerPhone ?? order.customerPhone,
+        address: payload.address ?? order.address,
+        district: payload.district ?? order.district,
+        union: payload.union !== undefined ? payload.union : order.union,
+        orderNotes: payload.orderNotes !== undefined ? payload.orderNotes : order.orderNotes,
+        subtotal,
+        shippingCharge,
+        discountAmount,
+        total,
+        promoCode: payload.promoCode !== undefined ? payload.promoCode : order.promoCode,
+        items: { create: itemsData },
+      },
+      include: { items: true }
+    });
+  });
+};
+
 const deleteOrder = async (id: string) => {
   const order = await prisma.order.findUnique({ where: { id } });
   if (!order) {
@@ -375,6 +457,7 @@ export const orderService = {
   getOrders,
   getSingleOrder,
   updateOrderStatus,
+  updateOrder,
   deleteOrder,
   checkoutLandingPage
 };

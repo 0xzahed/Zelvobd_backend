@@ -14,4 +14,5 @@ orderRouter.use(requireAdminAuth);
 orderRouter.get('/', orderController.getOrders);
 orderRouter.get('/:id', orderController.getSingleOrder);
 orderRouter.patch('/:id/status', orderController.updateOrderStatus);
+orderRouter.patch('/:id', orderController.updateOrder);
 orderRouter.delete('/:id', orderController.deleteOrder);
