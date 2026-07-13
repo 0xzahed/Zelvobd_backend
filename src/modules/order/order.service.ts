@@ -1,5 +1,5 @@
+import { OrderStatus, Prisma } from '@prisma/client';
 import { StatusCodes } from 'http-status-codes';
-import { Prisma, OrderStatus } from '@prisma/client';
 import { ApiError } from '../../core/errors/ApiError.js';
 import { prisma } from '../../lib/prisma.js';
 import { freeDeliveryService } from '../freeDelivery/freeDelivery.service.js';
@@ -72,14 +72,14 @@ const calculateFlashSalePrice = (
 
 const checkout = async (payload: CheckoutPayload) => {
   const { items, promoCode } = payload;
-  
+
   if (!items || items.length === 0) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Cart is empty');
   }
 
-  const productIds = items.map(i => i.productId);
+  const productIds = items.map((i) => i.productId);
   const now = new Date();
-  
+
   const products = await prisma.product.findMany({
     where: { id: { in: productIds } },
     include: {
@@ -97,29 +97,40 @@ const checkout = async (payload: CheckoutPayload) => {
   const orderItemsData: any[] = [];
 
   for (const item of items) {
-    const product = products.find(p => p.id === item.productId);
+    const product = products.find((p) => p.id === item.productId);
     if (!product) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, `Product not found (ID: ${item.productId})`);
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        `Product not found (ID: ${item.productId})`
+      );
     }
 
-    let variant = product.variants.find(v => 
-      (item.color ? v.color === item.color : true) && 
-      (item.size ? v.size === item.size : true)
+    let variant = product.variants.find(
+      (v) =>
+        (item.color ? v.color === item.color : true) &&
+        (item.size ? v.size === item.size : true)
     );
-    
+
     if (!variant && product.variants.length > 0) {
       variant = product.variants[0];
     }
 
     if (!variant) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, `No variant found for product ${product.title}`);
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        `No variant found for product ${product.title}`
+      );
     }
 
     let finalPrice = Number(variant.discountedPrice);
 
     if (product.flashSaleItems && product.flashSaleItems.length > 0) {
-       const campaign = product.flashSaleItems[0].flashSaleCampaign;
-       finalPrice = calculateFlashSalePrice(finalPrice, campaign.discountType, Number(campaign.discountValue));
+      const campaign = product.flashSaleItems[0].flashSaleCampaign;
+      finalPrice = calculateFlashSalePrice(
+        finalPrice,
+        campaign.discountType,
+        Number(campaign.discountValue)
+      );
     }
 
     subtotal += finalPrice * item.quantity;
@@ -140,7 +151,7 @@ const checkout = async (payload: CheckoutPayload) => {
   let totalPaidDeliveryQuantity = 0;
 
   for (const item of items) {
-    const product = products.find(p => p.id === item.productId);
+    const product = products.find((p) => p.id === item.productId);
     if (!product) continue;
 
     const isFree = await freeDeliveryService.resolveFreeDeliveryForProduct({
@@ -159,13 +170,13 @@ const checkout = async (payload: CheckoutPayload) => {
   let shippingCharge = 0;
   if (!allItemsFree) {
     const baseCharge = payload.district === 'Inside Dhaka' ? 100 : 150;
-    
+
     let extraCharge = 0;
     if (totalPaidDeliveryQuantity > 1) {
       const extraWeight = Math.max(0, totalWeight - 1);
       extraCharge = extraWeight * 20;
     }
-    
+
     shippingCharge = baseCharge + extraCharge;
   }
 
@@ -186,8 +197,14 @@ const checkout = async (payload: CheckoutPayload) => {
     if (promo.endDate && now > promo.endDate) {
       throw new ApiError(StatusCodes.BAD_REQUEST, 'Promo code is expired');
     }
-    if (promo.minOrderValue && new Prisma.Decimal(subtotal).lessThan(promo.minOrderValue)) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, `Minimum order value of ${promo.minOrderValue} required`);
+    if (
+      promo.minOrderValue &&
+      new Prisma.Decimal(subtotal).lessThan(promo.minOrderValue)
+    ) {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        `Minimum order value of ${promo.minOrderValue} required`
+      );
     }
 
     const discountValueNum = Number(promo.discountValue);
@@ -207,13 +224,13 @@ const checkout = async (payload: CheckoutPayload) => {
     if (discountAmount > subtotal) {
       discountAmount = subtotal;
     }
-    
+
     validPromoCode = promo.code;
   }
 
   const total = Math.max(0, subtotal + shippingCharge - discountAmount);
-  
-  const orderCode = "EC" + Math.floor(10000000 + Math.random() * 90000000).toString();
+
+  const orderCode = 'EC' + Math.floor(10000000 + Math.random() * 90000000).toString();
 
   const order = await prisma.$transaction(async (tx) => {
     if (validPromoCode) {
@@ -249,7 +266,15 @@ const checkout = async (payload: CheckoutPayload) => {
   return order;
 };
 
-const checkoutLandingPage = async (payload: { customerName: string; customerPhone: string; address: string; district?: string | null; landingPageId: string; quantity: number; price: number }) => {
+const checkoutLandingPage = async (payload: {
+  customerName: string;
+  customerPhone: string;
+  address: string;
+  district?: string | null;
+  landingPageId: string;
+  quantity: number;
+  price: number;
+}) => {
   const landingPage = await prisma.landingPage.findUnique({
     where: { id: payload.landingPageId }
   });
@@ -258,13 +283,11 @@ const checkoutLandingPage = async (payload: { customerName: string; customerPhon
     throw new ApiError(StatusCodes.NOT_FOUND, 'Landing page not found');
   }
 
-  if (!landingPage.productId) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Landing page has no linked product');
-  }
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const checkoutSection = landingPage.checkoutSection as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const heroSection = landingPage.heroSection as any;
-  
+
   if (!checkoutSection || !heroSection || !heroSection.offerPrice) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid landing page configuration');
   }
@@ -273,24 +296,24 @@ const checkoutLandingPage = async (payload: { customerName: string; customerPhon
   const price = Number(heroSection.offerPrice) || payload.price;
   const quantity = payload.quantity || 1;
   const subtotal = price * quantity;
-  
+
   const productName = checkoutSection.productName || 'Landing Page Product';
 
   return prisma.$transaction(async (tx) => {
     // Generate order code (Z-YYMMDD-XXXX)
     const today = new Date();
     const datePrefix = `Z-${today.getFullYear().toString().slice(2)}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}`;
-    
+
     const lastOrder = await tx.order.findFirst({
       where: { code: { startsWith: datePrefix } },
       orderBy: { code: 'desc' }
     });
-    
+
     let sequenceNumber = 1;
     if (lastOrder && lastOrder.code) {
       const lastSequence = parseInt(lastOrder.code.split('-')[2] || '0', 10);
       if (!isNaN(lastSequence)) {
-         sequenceNumber = lastSequence + 1;
+        sequenceNumber = lastSequence + 1;
       }
     }
     const orderCode = `${datePrefix}-${sequenceNumber.toString().padStart(4, '0')}`;
@@ -311,12 +334,14 @@ const checkoutLandingPage = async (payload: { customerName: string; customerPhon
         total: subtotal,
         status: 'PENDING',
         items: {
-          create: [{
-            productId: landingPage.productId!,
-            productName: productName,
-            price: price,
-            quantity: quantity,
-          }]
+          create: [
+            {
+              productId: landingPage.productId || null,
+              productName: productName,
+              price: price,
+              quantity: quantity
+            }
+          ]
         }
       },
       include: { items: true }
@@ -332,13 +357,15 @@ const getOrders = async (params: GetOrdersQueryInput) => {
 
   const whereClause: Prisma.OrderWhereInput = {
     ...(status ? { status } : {}),
-    ...(search ? {
-      OR: [
-        { code: { contains: search, mode: 'insensitive' } },
-        { customerName: { contains: search, mode: 'insensitive' } },
-        { customerPhone: { contains: search, mode: 'insensitive' } }
-      ]
-    } : {})
+    ...(search
+      ? {
+          OR: [
+            { code: { contains: search, mode: 'insensitive' } },
+            { customerName: { contains: search, mode: 'insensitive' } },
+            { customerPhone: { contains: search, mode: 'insensitive' } }
+          ]
+        }
+      : {})
   };
 
   const [data, total] = await prisma.$transaction([
@@ -398,26 +425,31 @@ const updateOrder = async (id: string, payload: UpdateOrderPayload) => {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Order not found');
   }
 
-  const itemsData = payload.items?.map(item => ({
-    productId: item.productId || null,
-    productName: item.productName,
-    productImage: item.productImage || null,
-    price: roundToTwoDecimals(item.price),
-    quantity: item.quantity,
-    color: item.color || null,
-    size: item.size || null,
-  })) || [];
+  const itemsData =
+    payload.items?.map((item) => ({
+      productId: item.productId || null,
+      productName: item.productName,
+      productImage: item.productImage || null,
+      price: roundToTwoDecimals(item.price),
+      quantity: item.quantity,
+      color: item.color || null,
+      size: item.size || null
+    })) || [];
 
   const subtotal = roundToTwoDecimals(
     itemsData.reduce((sum, item) => sum + item.price * item.quantity, 0)
   );
-  const shippingCharge = payload.shippingCharge !== undefined
-    ? roundToTwoDecimals(payload.shippingCharge)
-    : Number(order.shippingCharge);
-  const discountAmount = payload.discountAmount !== undefined
-    ? roundToTwoDecimals(payload.discountAmount)
-    : Number(order.discountAmount);
-  const total = roundToTwoDecimals(Math.max(0, subtotal + shippingCharge - discountAmount));
+  const shippingCharge =
+    payload.shippingCharge !== undefined
+      ? roundToTwoDecimals(payload.shippingCharge)
+      : Number(order.shippingCharge);
+  const discountAmount =
+    payload.discountAmount !== undefined
+      ? roundToTwoDecimals(payload.discountAmount)
+      : Number(order.discountAmount);
+  const total = roundToTwoDecimals(
+    Math.max(0, subtotal + shippingCharge - discountAmount)
+  );
 
   return prisma.$transaction(async (tx) => {
     await tx.orderItem.deleteMany({ where: { orderId: id } });
@@ -430,13 +462,14 @@ const updateOrder = async (id: string, payload: UpdateOrderPayload) => {
         address: payload.address ?? order.address,
         district: payload.district ?? order.district,
         union: payload.union !== undefined ? payload.union : order.union,
-        orderNotes: payload.orderNotes !== undefined ? payload.orderNotes : order.orderNotes,
+        orderNotes:
+          payload.orderNotes !== undefined ? payload.orderNotes : order.orderNotes,
         subtotal,
         shippingCharge,
         discountAmount,
         total,
         promoCode: payload.promoCode !== undefined ? payload.promoCode : order.promoCode,
-        items: { create: itemsData },
+        items: { create: itemsData }
       },
       include: { items: true }
     });
