@@ -538,6 +538,7 @@ const getActiveFlashSaleProducts = async (params: GetActiveFlashSaleProductsQuer
         flashSaleCampaignId: campaign.id
       }
     },
+    availability: true,
     ...(search
       ? {
           title: {
@@ -630,6 +631,7 @@ const getAllActiveFlashSaleProducts = async (params: GetAllActiveFlashSaleProduc
         }
       }
     },
+    availability: true,
     ...(search
       ? {
           title: {

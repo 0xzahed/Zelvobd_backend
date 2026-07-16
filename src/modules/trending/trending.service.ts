@@ -564,6 +564,7 @@ const getTrending = async (params: GetTrendingPublicQueryInput) => {
 
     const whereClause = {
       isTrending: true,
+      availability: true,
       ...(search
         ? {
             title: {

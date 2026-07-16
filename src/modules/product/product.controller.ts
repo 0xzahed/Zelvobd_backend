@@ -312,7 +312,9 @@ const getProductList = catchAsync(async (req, res) => {
     );
   }
 
-  const result = await productService.getProductList(parsedQuery.data);
+  const result = await productService.getProductList(parsedQuery.data, {
+    includeUnavailable: Boolean((req as any).isAdmin)
+  });
 
   sendResponse(req, res, {
     statusCode: StatusCodes.OK,
@@ -339,8 +341,14 @@ const getProductBySlug = catchAsync(async (req, res) => {
   if (!slug || typeof slug !== 'string') {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Product slug is required');
   }
-  
-  const product = await productService.getProductBySlug(slug);
+
+  const product = await productService.getProductBySlug(slug, {
+    includeUnavailable: Boolean((req as any).isAdmin)
+  });
+
+  if (!product) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Product not found');
+  }
 
   sendResponse(req, res, {
     statusCode: StatusCodes.OK,

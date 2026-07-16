@@ -186,6 +186,7 @@ const getTopCatalogProducts = async (params: GetTopCatalogProductsQueryInput) =>
     categoryId: {
       in: effectiveCategoryIds
     },
+    availability: true,
     ...(search
       ? {
           title: {

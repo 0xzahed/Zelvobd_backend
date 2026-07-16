@@ -1,14 +1,15 @@
 import { Router } from 'express';
 
+import { optionalAdminAuth } from '../../middlewares/optionalAdminAuth.js';
 import { requireAdminAuth } from '../../middlewares/requireAdminAuth.js';
 import { productMediaUpload } from '../../middlewares/upload.js';
 import { productController } from './product.controller.js';
 
 export const productRouter = Router();
 
-productRouter.get('/', productController.getProductList);
+productRouter.get('/', optionalAdminAuth, productController.getProductList);
 productRouter.get('/scan/:code', productController.scanBarcode);
-productRouter.get('/slug/:slug', productController.getProductBySlug);
+productRouter.get('/slug/:slug', optionalAdminAuth, productController.getProductBySlug);
 productRouter.get('/:id', productController.getSingleProduct);
 
 productRouter.use(requireAdminAuth);

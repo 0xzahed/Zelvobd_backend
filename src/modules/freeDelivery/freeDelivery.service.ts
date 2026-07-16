@@ -564,6 +564,7 @@ const getFreeDelivery = async (params: GetFreeDeliveryPublicQueryInput) => {
 
     const whereClause = {
       isFreeDelivery: true,
+      availability: true,
       ...(search
         ? {
             title: {

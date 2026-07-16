@@ -104,6 +104,10 @@ type GetProductListParams = {
   subCategoryId?: string;
 };
 
+type GetProductOptions = {
+  includeUnavailable?: boolean;
+};
+
 const getProductSelect = (now: Date = new Date()) => ({
   id: true,
   slugId: true,
@@ -511,7 +515,7 @@ const createProduct = async (payload: CreateProductPayload) => {
   }
 };
 
-const getProductList = async (params: GetProductListParams) => {
+const getProductList = async (params: GetProductListParams, options: GetProductOptions = {}) => {
   const { page, limit, search, categoryId, subCategoryId } = params;
   const skip = (page - 1) * limit;
 
@@ -525,7 +529,8 @@ const getProductList = async (params: GetProductListParams) => {
         }
       : {}),
     ...(categoryId ? { categoryId } : {}),
-    ...(subCategoryId ? { subCategoryId } : {})
+    ...(subCategoryId ? { subCategoryId } : {}),
+    ...(options.includeUnavailable ? {} : { availability: true })
   };
 
   const now = new Date();
@@ -567,7 +572,7 @@ const getSingleProduct = async (id: string) => {
   return mapProductWithFlashSale(product, true);
 };
 
-const getProductBySlug = async (slug: string) => {
+const getProductBySlug = async (slug: string, options: GetProductOptions = {}) => {
   const product = await prisma.product.findUnique({
     where: { slug },
     select: getProductSelect(new Date())
@@ -575,6 +580,10 @@ const getProductBySlug = async (slug: string) => {
 
   if (!product) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Product not found');
+  }
+
+  if (!options.includeUnavailable && !product.availability) {
+    return null;
   }
 
   return mapProductWithFlashSale(product, true);
