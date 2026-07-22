@@ -60,7 +60,7 @@ export const updateOrderSchema = z.object({
 
 export const getOrdersQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().positive().max(100).default(20),
+  limit: z.coerce.number().int().positive().max(10000).default(20),
   search: z.string().trim().optional(),
   status: z.enum([
     'PENDING', 'PROCESSING', 'HOLD', 'PICKUP', 'DELIVERED', 'CUSTOMER_CANCELLED', 'CANCELLED', 'TRASH'
