@@ -138,7 +138,7 @@ const checkout = async (payload: CheckoutPayload) => {
     orderItemsData.push({
       productId: product.id,
       productName: product.title,
-      productImage: variant.imageUrl,
+      productImage: variant.imageUrl || product.coverImageUrl || product.thumbnailUrl || null,
       price: finalPrice,
       quantity: item.quantity,
       color: variant.color,
@@ -338,6 +338,7 @@ const checkoutLandingPage = async (payload: {
             {
               productId: landingPage.productId || null,
               productName: productName,
+              productImage: checkoutSection.productImage || null,
               price: price,
               quantity: quantity
             }
