@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes';
 import { ApiError } from '../../core/errors/ApiError.js';
 import { prisma } from '../../lib/prisma.js';
 import { freeDeliveryService } from '../freeDelivery/freeDelivery.service.js';
+import { sendMetaEvent } from '../../utils/metaCapi.js';
 
 type OrderItemInput = {
   productId: string;
@@ -20,6 +21,10 @@ type CheckoutPayload = {
   orderNotes?: string | null;
   items: OrderItemInput[];
   promoCode?: string | null;
+  fbp?: string | null;
+  fbc?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
 };
 
 type GetOrdersQueryInput = {
@@ -255,6 +260,10 @@ const checkout = async (payload: CheckoutPayload) => {
         total,
         promoCode: validPromoCode,
         status: 'PENDING',
+        fbp: payload.fbp,
+        fbc: payload.fbc,
+        ipAddress: payload.ipAddress,
+        userAgent: payload.userAgent,
         items: {
           create: orderItemsData
         }
@@ -274,6 +283,10 @@ const checkoutLandingPage = async (payload: {
   landingPageId: string;
   quantity: number;
   price: number;
+  fbp?: string | null;
+  fbc?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
 }) => {
   const landingPage = await prisma.landingPage.findUnique({
     where: { id: payload.landingPageId }
@@ -333,6 +346,10 @@ const checkoutLandingPage = async (payload: {
         discountAmount: 0,
         total: subtotal,
         status: 'PENDING',
+        fbp: payload.fbp,
+        fbc: payload.fbc,
+        ipAddress: payload.ipAddress,
+        userAgent: payload.userAgent,
         items: {
           create: [
             {
@@ -410,11 +427,32 @@ const updateOrderStatus = async (id: string, status: OrderStatus) => {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Order not found');
   }
 
-  return prisma.order.update({
+  const updatedOrder = await prisma.order.update({
     where: { id },
     data: { status },
     include: { items: true }
   });
+
+  if (status === 'PROCESSING') {
+    sendMetaEvent({
+      eventName: 'Purchase',
+      eventTime: Math.floor(Date.now() / 1000),
+      userData: {
+        fbp: updatedOrder.fbp,
+        fbc: updatedOrder.fbc,
+        clientIpAddress: updatedOrder.ipAddress,
+        clientUserAgent: updatedOrder.userAgent,
+        phone: updatedOrder.customerPhone
+      },
+      customData: {
+        value: Number(updatedOrder.total),
+        currency: 'BDT',
+        orderId: updatedOrder.code
+      }
+    });
+  }
+
+  return updatedOrder;
 };
 
 const updateOrder = async (id: string, payload: UpdateOrderPayload) => {

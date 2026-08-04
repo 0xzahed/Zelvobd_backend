@@ -27,7 +27,12 @@ const getOrderIdFromParams = (req: Request): string => {
 };
 
 const checkout = catchAsync(async (req, res) => {
-  const parsedBody = checkoutSchema.safeParse(req.body);
+  const bodyWithTracking = {
+    ...req.body,
+    ipAddress: req.ip || (req.headers['x-forwarded-for'] as string) || null,
+    userAgent: req.headers['user-agent'] || null,
+  };
+  const parsedBody = checkoutSchema.safeParse(bodyWithTracking);
 
   if (!parsedBody.success) {
     throw new ApiError(StatusCodes.BAD_REQUEST, getValidationErrorMessage(parsedBody.error));
@@ -43,7 +48,12 @@ const checkout = catchAsync(async (req, res) => {
 });
 
 const checkoutLandingPage = catchAsync(async (req, res) => {
-  const parsedBody = landingPageCheckoutSchema.safeParse(req.body);
+  const bodyWithTracking = {
+    ...req.body,
+    ipAddress: req.ip || (req.headers['x-forwarded-for'] as string) || null,
+    userAgent: req.headers['user-agent'] || null,
+  };
+  const parsedBody = landingPageCheckoutSchema.safeParse(bodyWithTracking);
 
   if (!parsedBody.success) {
     throw new ApiError(StatusCodes.BAD_REQUEST, getValidationErrorMessage(parsedBody.error));

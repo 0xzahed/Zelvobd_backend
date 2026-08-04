@@ -435,6 +435,12 @@ model Order {
   consignmentId String?
   trackingCode  String?
 
+  // Meta Pixel Tracking Data
+  fbp           String?
+  fbc           String?
+  ipAddress     String?
+  userAgent     String?
+
   status OrderStatus @default(PENDING)
 
   items OrderItem[]

@@ -16,6 +16,10 @@ export const checkoutSchema = z.object({
   orderNotes: z.string().trim().nullable().optional(),
   items: z.array(orderItemSchema).min(1, 'Cart cannot be empty'),
   promoCode: z.string().trim().nullable().optional(),
+  fbp: z.string().trim().nullable().optional(),
+  fbc: z.string().trim().nullable().optional(),
+  ipAddress: z.string().trim().nullable().optional(),
+  userAgent: z.string().trim().nullable().optional(),
 });
 
 export const landingPageCheckoutSchema = z.object({
@@ -26,6 +30,10 @@ export const landingPageCheckoutSchema = z.object({
   landingPageId: z.string().trim().min(1, 'Landing page ID is required'),
   quantity: z.number().int().positive().default(1),
   price: z.number().positive(),
+  fbp: z.string().trim().nullable().optional(),
+  fbc: z.string().trim().nullable().optional(),
+  ipAddress: z.string().trim().nullable().optional(),
+  userAgent: z.string().trim().nullable().optional(),
 });
 
 export const updateOrderStatusSchema = z.object({
